@@ -1,0 +1,3 @@
+# Add LoRA download URLs here (Civitai 'Download' link)
+# Format: URL
+# Example: https://civitai.com/api/download/models/123456

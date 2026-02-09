@@ -30,6 +30,24 @@ else
     echo "   -> Model ready."
 fi
 
+# 3.5. LoRA Download (Optional)
+echo "🧩 [3.5/5] Checking LoRAs..."
+LORA_DIR="/workspace/stable-diffusion-webui/models/Lora"
+LORA_LIST="/workspace/lady-nuggets-enterprise/config/loras.txt"
+
+if [ -f "$LORA_LIST" ]; then
+    while IFS= read -r url || [ -n "$url" ]; do
+        # Skip empty lines and comments
+        [[ "$url" =~ ^#.*$ ]] || [[ -z "$url" ]] && continue
+        
+        echo "   -> Downloading LoRA: $url"
+        cd "$LORA_DIR" || exit
+        wget -q --content-disposition "$url"
+    done < "$LORA_LIST"
+else
+    echo "   -> No loras.txt found. Skipping."
+fi
+
 # 4. Generate Images
 cd /workspace/lady-nuggets-enterprise || exit
 COUNT=${1:-6} # Default to 6 images if not specified
