@@ -334,18 +334,25 @@ def generate_image(prompt, negative_prompt, model_name):
     """Call SD API with retry logic"""
     log('gen', f"Starting generation with model: {model_name}")
     
-    # === OPTIMIZED FOR OneObsession v19 (Per Author Recommendations) ===
-    # Source: https://civitai.com/models/1318945/one-obsession
+    # === OPTIMIZED FOR Illustrious-based models (OneObsession v19) ===
+    # Research sources: CivitAI Illustrious guides, NoobAI wiki, community testing
+    # Key findings:
+    #   - CFG 3-5 is optimal. Above 6 causes overbaking/oversaturation
+    #   - Euler a is the consensus best sampler for Illustrious
+    #   - Hires 1.5x is safer than 2x (2x can introduce artifacts)
+    #   - Denoise 0.4-0.5 gives best detail on hires pass
+    #   - 20-25 steps is sweet spot (more doesn't help much)
+    #   - 832x1216 or 768x1344 are the recommended portrait sizes
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
         
-        # Author recommended settings
-        "steps": 30,                    # Author recommends 25-35
-        "cfg_scale": 5.0,               # Author recommends 3-6 (NOT higher!)
-        "width": 832,                   # Author recommended: 832x1216
-        "height": 1216,                 # Optimal for this model
-        "sampler_name": "Euler a",      # Author specifically recommends Euler a
+        # Generation settings (Illustrious optimal)
+        "steps": 25,                     # 20-25 sweet spot for Illustrious
+        "cfg_scale": 4.5,                # 4.5 = sweet spot. NEVER above 6
+        "width": 832,                    # Portrait: 832x1216 (2:3 ratio)
+        "height": 1216,
+        "sampler_name": "Euler a",       # Best for Illustrious family
         "batch_size": 1,
         
         "override_settings": {
@@ -353,12 +360,13 @@ def generate_image(prompt, negative_prompt, model_name):
             "CLIP_stop_at_last_layers": 2
         },
         
-        # Hires Fix (2x upscale = 1664x2432 final)
+        # Hires Fix (1.5x upscale = 1248x1824 final)
+        # 1.5x is recommended over 2x to avoid artifacts
         "enable_hr": True,
-        "hr_scale": 2.0,
-        "hr_upscaler": "Latent",         # Latent works well with this model
-        "denoising_strength": 0.35,      # Lower = preserve more detail
-        "hr_second_pass_steps": 15,
+        "hr_scale": 1.5,                 # 1.5x safer, 2x can cause errors
+        "hr_upscaler": "Latent",         # Latent is VRAM efficient
+        "denoising_strength": 0.45,      # 0.4-0.5 for best detail on hires
+        "hr_second_pass_steps": 20,      # More steps = cleaner upscale
         
     }
     
