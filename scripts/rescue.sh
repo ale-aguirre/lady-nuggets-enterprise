@@ -13,6 +13,10 @@ sleep 2
 # 1. Setup Env
 export REFORGE_API="http://127.0.0.1:7860"
 
+# FIX: Google Gemini / httplib2 dependency conflict
+echo "🔧 Fixing dependencies..."
+pip install "pyparsing<3" > /dev/null 2>&1
+
 # 2. Start Server (CLEAN & DIRECT)
 echo "🚀 Launching Server (Direct Python Mode)..."
 cd /workspace/stable-diffusion-webui || exit
@@ -26,7 +30,8 @@ SERVER_PID=$!
 
 echo "⏳ Waiting for Server..."
 for i in {1..300}; do
-    if curl -s http://127.0.0.1:7860 > /dev/null; then
+    # Check /docs (Swagger) or /sdapi/v1/options to get 200 OK
+    if curl -s -f http://127.0.0.1:7860/docs > /dev/null; then
         echo "✅ Server is UP!"
         break
     fi
