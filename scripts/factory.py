@@ -360,17 +360,29 @@ def generate_image(prompt, negative_prompt, model_name):
         "denoising_strength": 0.35,      # Lower = preserve more detail
         "hr_second_pass_steps": 15,
         
-        # ADetailer for face enhancement
-        "alwayson_scripts": {
-            "ADetailer": {
-                "args": [{
-                    "ad_model": "face_yolov8n.pt",
-                    "ad_confidence": 0.3,
-                    "ad_denoising_strength": 0.35
-                }]
-            }
-        }
     }
+    
+    # ADetailer: only add if extension is installed on this server
+    try:
+        scripts_resp = requests.get(f"{REFORGE_API}/sdapi/v1/scripts", timeout=5)
+        if scripts_resp.status_code == 200:
+            scripts_data = scripts_resp.json()
+            available_scripts = [s.lower() for s in scripts_data.get("txt2img", [])]
+            if "adetailer" in available_scripts:
+                payload["alwayson_scripts"] = {
+                    "ADetailer": {
+                        "args": [{
+                            "ad_model": "face_yolov8n.pt",
+                            "ad_confidence": 0.3,
+                            "ad_denoising_strength": 0.35
+                        }]
+                    }
+                }
+                log('info', "ADetailer enabled (face enhancement)")
+            else:
+                log('warning', "ADetailer not installed, skipping face enhancement")
+    except:
+        log('warning', "Could not check scripts, skipping ADetailer")
     
     # Log payload summary
     print(f"\n{Colors.WHITE}📜 Generation Config:{Colors.END}")
