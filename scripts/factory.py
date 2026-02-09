@@ -96,10 +96,14 @@ OC_BASE = """masterpiece, best quality, amazing quality, very aesthetic, absurdr
 narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, 
 (thick black cat tail, long tail, black cat ears), dynamic pose"""
 
-# === NEGATIVE PROMPT (Author Recommended) ===
-NEGATIVE_PROMPT = """worst quality, normal quality, anatomical nonsense, bad anatomy, interlocked fingers, extra fingers, 
-watermark, simple background, transparent, low quality, logo, text, signature, 
-face backlighting, backlighting, extra limbs, missing limbs, bad_hands, bad_feet, ugly, deformed"""
+# === NEGATIVE PROMPT (Aggressive anatomy fix) ===
+NEGATIVE_PROMPT = """worst quality, low quality, normal quality, 
+(bad anatomy:1.4), (bad hands:1.5), (extra fingers:1.5), (fewer fingers:1.5), (6 fingers:1.5), (extra digit:1.5), (missing fingers:1.4),
+(fused fingers:1.3), (too many fingers:1.3), (mutated hands:1.3), (poorly drawn hands:1.3), (deformed fingers:1.3),
+extra limbs, missing limbs, extra arms, extra legs, malformed limbs, fused limbs,
+(ugly face:1.2), (deformed face:1.2), (cross-eyed:1.2), asymmetric eyes,
+watermark, simple background, transparent, logo, text, signature, username,
+face backlighting, backlighting, ugly, deformed, duplicate, error, jpeg artifacts"""
 
 # === LLM MODELS ===
 GROQ_MODELS = [
@@ -131,9 +135,17 @@ EXAMPLES:
 Theme: "Witch Academy" → wearing black witch hat, gothic lolita dress, holding magic staff, standing in mystical library, ancient tomes, candlelight, mysterious smile, elegant pose
 Theme: "Beach Day" → wearing white bikini, sarong, standing on sandy beach, ocean waves, sunset lighting, playful pose, hair blowing in wind, holding sun hat"""
 
+# LoRA disabled by default - the LadyNuggets LoRA was causing quality issues
+# To re-enable, pass --lora flag when running factory.py
+USE_LORA = False
+
 def detect_loras():
     """Detect available LoRAs from server"""
     try:
+        # Refresh LoRA list first
+        requests.post(f"{REFORGE_API}/sdapi/v1/refresh-loras", timeout=5)
+        import time; time.sleep(1)
+        
         resp = requests.get(f"{REFORGE_API}/sdapi/v1/loras", timeout=5)
         if resp.status_code == 200:
             loras = resp.json()
@@ -146,14 +158,18 @@ def detect_loras():
 
 def build_lora_block():
     """Build LoRA activation string based on available LoRAs"""
+    if not USE_LORA:
+        log('info', "LoRA disabled (use --lora to enable)")
+        return ""
+    
     loras = detect_loras()
     lora_tags = []
     
     # Priority LoRAs
     priority_loras = {
-        'LadyNuggets': 0.8,
-        'ladynuggets': 0.8,
-        'lady_nuggets': 0.8,
+        'LadyNuggets': 0.7,
+        'ladynuggets': 0.7,
+        'lady_nuggets': 0.7,
     }
     
     for lora in loras:
@@ -330,19 +346,15 @@ def log_server_state():
     
     print(f"{Colors.CYAN}{'='*60}{Colors.END}\n")
 
-def generate_image(prompt, negative_prompt, model_name):
-    """Call SD API with retry logic"""
+def generate_image(prompt, negative_prompt, model_name, upscale_factor=1.5, no_hires=False):
+    """Call SD API with retry logic
+    Args:
+        upscale_factor: 1.0 (off), 1.5 (default), 2.0, 4.0
+        no_hires: If True, disable hires fix entirely
+    """
     log('gen', f"Starting generation with model: {model_name}")
     
     # === OPTIMIZED FOR Illustrious-based models (OneObsession v19) ===
-    # Research sources: CivitAI Illustrious guides, NoobAI wiki, community testing
-    # Key findings:
-    #   - CFG 3-5 is optimal. Above 6 causes overbaking/oversaturation
-    #   - Euler a is the consensus best sampler for Illustrious
-    #   - Hires 1.5x is safer than 2x (2x can introduce artifacts)
-    #   - Denoise 0.4-0.5 gives best detail on hires pass
-    #   - 20-25 steps is sweet spot (more doesn't help much)
-    #   - 832x1216 or 768x1344 are the recommended portrait sizes
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
@@ -359,16 +371,25 @@ def generate_image(prompt, negative_prompt, model_name):
             "sd_model_checkpoint": model_name,
             "CLIP_stop_at_last_layers": 2
         },
-        
-        # Hires Fix (1.5x upscale = 1248x1824 final)
-        # 1.5x is recommended over 2x to avoid artifacts
-        "enable_hr": True,
-        "hr_scale": 1.5,                 # 1.5x safer, 2x can cause errors
-        "hr_upscaler": "Latent",         # Latent is VRAM efficient
-        "denoising_strength": 0.45,      # 0.4-0.5 for best detail on hires
-        "hr_second_pass_steps": 20,      # More steps = cleaner upscale
-        
     }
+    
+    # Hires Fix (configurable)
+    use_hires = not no_hires and upscale_factor > 1.0
+    if use_hires:
+        payload.update({
+            "enable_hr": True,
+            "hr_scale": upscale_factor,
+            "hr_upscaler": "Latent",
+            "denoising_strength": 0.45,
+            "hr_second_pass_steps": 20,
+        })
+        final_w = int(832 * upscale_factor)
+        final_h = int(1216 * upscale_factor)
+        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h}")
+    else:
+        payload["enable_hr"] = False
+        log('info', "Hires Fix: DISABLED (base 832x1216)")
+    
     
     # ADetailer: only add if extension is installed on this server
     try:
@@ -475,8 +496,15 @@ def main():
     parser.add_argument("--count", type=int, default=1, help="Number of images to generate")
     parser.add_argument("--output", type=str, default=None, help="Output directory")
     parser.add_argument("--theme", type=str, default=None, help="Specific theme to use")
+    parser.add_argument("--lora", action="store_true", help="Enable LoRA (disabled by default)")
+    parser.add_argument("--upscale", type=float, default=1.5, help="Hires upscale factor: 1.0 (off), 1.5 (default), 2.0, 4.0")
+    parser.add_argument("--no-hires", action="store_true", help="Disable Hires Fix entirely")
     parser.add_argument("--debug", action="store_true", help="Show debug information")
     args = parser.parse_args()
+    
+    # Apply flags
+    global USE_LORA
+    USE_LORA = args.lora
     
     # Setup output directory
     output_dir = args.output if args.output else OUTPUT_DIR
@@ -535,7 +563,8 @@ def main():
             full_prompt += f", {lora_block}"
         
         # Generate
-        result = generate_image(full_prompt, NEGATIVE_PROMPT, model_name)
+        result = generate_image(full_prompt, NEGATIVE_PROMPT, model_name, 
+                               upscale_factor=args.upscale, no_hires=args.no_hires)
         
         # Save
         if result:
