@@ -218,6 +218,15 @@ def call_reforge_api(prompt):
     
     try:
         response = requests.post(f"{REFORGE_API}/sdapi/v1/txt2img", json=payload)
+        if response.status_code == 200:
+            print("✅ Generation Successful!")
+            return response.json()
+        else:
+            print(f"❌ Generation Failed: {response.status_code}")
+            return None
+    except Exception as e:
+        print(f"❌ API Connection Error: {e}")
+        return None
         # ...
 
 def log_server_state():

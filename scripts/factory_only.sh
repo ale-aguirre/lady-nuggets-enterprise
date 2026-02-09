@@ -10,7 +10,7 @@ export REFORGE_API="http://127.0.0.1:7860"
 # 2. Check & Download Model (User reported missing model)
 MODEL_DIR="/workspace/stable-diffusion-webui/models/Stable-diffusion"
 MODEL_NAME="oneObsession_v19Atypical.safetensors"
-MODEL_URL="https://civitai.com/api/download/models/302970"
+MODEL_URL="https://civitai.com/api/download/models/2443982?type=Model&format=SafeTensor&size=pruned&fp=fp16"
 
 if [ ! -f "$MODEL_DIR/$MODEL_NAME" ]; then
     echo "⬇️ Model Check: MISSING! Downloading OneObsession now..."

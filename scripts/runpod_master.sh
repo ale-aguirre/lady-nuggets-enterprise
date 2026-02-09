@@ -29,7 +29,7 @@ MODEL_DIR="/workspace/stable-diffusion-webui/models/Stable-diffusion"
 cd "$MODEL_DIR" || exit
 if [ ! -f "oneObsession_v19Atypical.safetensors" ]; then
     echo "   -> Downloading OneObsession (2GB+)... This may take a minute."
-    wget -q --show-progress https://civitai.com/api/download/models/302970 --content-disposition
+    wget -q --show-progress "https://civitai.com/api/download/models/2443982?type=Model&format=SafeTensor&size=pruned&fp=fp16" -O oneObsession_v19Atypical.safetensors
 else
     echo "   -> Model ready."
 fi
