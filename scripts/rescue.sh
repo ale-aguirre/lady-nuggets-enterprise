@@ -2,9 +2,12 @@
 # scripts/rescue.sh
 # KILLS everything and starts fresh. Use this if "Connection Refused".
 
-echo "💀 KILLING old processes..."
-pkill -f python
-pkill -f webui.sh
+echo "💀 KILLING old processes (Safely)..."
+# DO NOT kill 'python' generically (kills JupyterLab)
+pkill -f "launch.py"
+pkill -f "webui.sh"
+# Also kill standard SD processes if they have specific names
+pkill -f "python3 launch.py"
 sleep 2
 
 # 1. Setup Env
