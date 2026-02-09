@@ -1,7 +1,7 @@
 # Add LoRA download URLs here (Civitai 'Download' link)
 # Format: URL
 # === INDISPENSABLE ===
-https://civitai.com/models/971952 # Stabilizer (ilnaick) -> TODO: User verify download link
+https://civitai.com/api/download/models/971952 # Stabilizer (ilnaick)
 https://civitai.com/api/download/models/2241189?type=Model&format=SafeTensor # Aesthetic Quality (Masterpiece) v3.0
 
 # === OCCASIONAL / STYLE ===
