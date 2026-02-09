@@ -19,10 +19,6 @@ OPENROUTER_KEY = os.getenv("OPENROUTER_KEY")
 OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
-if GEMINI_KEY:
-    genai.configure(api_key=GEMINI_KEY)
-    model = genai.GenerativeModel('gemini-2.0-flash')
-
 # === LADY NUGGETS OC PROMPT (V9: High Quality) ===
 OC_PROMPT = """(masterpiece:1.3), (best quality:1.3), (EyesHD:1.2), (4k,8k,Ultra HD), ultra-detailed, sharp focus, ray tracing, best lighting, cinematic lighting, 
 1girl, solo, full body, centered composition, looking at viewer,
@@ -46,6 +42,10 @@ RULES:
 
 Theme: {theme}
 """
+
+if GEMINI_KEY:
+    genai.configure(api_key=GEMINI_KEY)
+    model = genai.GenerativeModel('gemini-2.0-flash')
 
 # FREE MODELS (OpenRouter)
 FREE_MODELS = [
