@@ -216,9 +216,27 @@ def call_reforge_api(prompt):
         "sampler_name": "Euler a",
         "batch_size": 1,
         
+        # === DYNAMIC MODEL SELECTION ===
+        # First, find the exact model name from the server
+        try:
+            models_resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models")
+            if models_resp.status_code == 200:
+                all_models = models_resp.json()
+                # Look for OneObsession
+                target_model = next((m['title'] for m in all_models if "oneobsession" in m['title'].lower()), None)
+                # Fallback to any anime model if not found
+                if not target_model:
+                     target_model = next((m['title'] for m in all_models if "anime" in m['title'].lower()), None)
+                
+                if target_model:
+                    print(f"🎯 Switching Model to: {target_model}")
+                    model_payload = {"sd_model_checkpoint": target_model}
+        except:
+            model_payload = {"sd_model_checkpoint": "oneObsession_v19Atypical.safetensors"}
+
         # === SETTINGS OVERRIDE ===
         "override_settings": {
-            "sd_model_checkpoint": "oneObsession_v19Atypical.safetensors",
+            **model_payload,
             "CLIP_stop_at_last_layers": 2
         },
 
