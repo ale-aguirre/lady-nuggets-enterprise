@@ -50,13 +50,23 @@ def load_themes():
         return [line.strip() for line in f if line.strip()]
 
 def get_ai_prompt(theme):
-    try:
-        response = model.generate_content(PROMPT_ENGINEER_INSTRUCTION.format(theme=theme))
-        scene_tags = response.text.strip()
-        return f"{OC_PROMPT}, {scene_tags}"
-    except Exception as e:
-        print(f"⚠️ Gemini Error: {e}")
-        return f"{OC_PROMPT}, {theme}"
+    # Retry Logic (Handle "Too Many Requests")
+    for attempt in range(3):
+        try:
+            response = model.generate_content(PROMPT_ENGINEER_INSTRUCTION.format(theme=theme))
+            scene_tags = response.text.strip()
+            return f"{OC_PROMPT}, {scene_tags}"
+        except Exception as e:
+            if "429" in str(e):
+                print(f"⚠️ Quota hit. Waiting 10s... (Attempt {attempt+1}/3)")
+                time.sleep(10)
+            else:
+                print(f"⚠️ Gemini Error: {e}")
+                break
+    
+    # Fallback: Just use the theme directly
+    print("⚠️ Using Fallback Prompt (No AI Expansion)")
+    return f"{OC_PROMPT}, {theme}"
 
 def call_reforge_api(prompt):
     payload = {
