@@ -15,56 +15,63 @@ load_dotenv(os.path.join(BASE_DIR, "config", ".env"))
 # CONFIG
 REFORGE_API = os.getenv("REFORGE_API", "http://127.0.0.1:7861")
 GEMINI_KEY = os.getenv("GEMINI_KEY")
+OPENROUTER_KEY = os.getenv("OPENROUTER_KEY")
 OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
-genai.configure(api_key=GEMINI_KEY)
-model = genai.GenerativeModel('gemini-2.0-flash')
+if GEMINI_KEY:
+    genai.configure(api_key=GEMINI_KEY)
+    model = genai.GenerativeModel('gemini-2.0-flash')
 
-# === LADY NUGGETS OC PROMPT (V9: High Quality) ===
-OC_PROMPT = """(masterpiece:1.3), (best quality:1.3), (EyesHD:1.2), (4k,8k,Ultra HD), ultra-detailed, sharp focus, ray tracing, best lighting, cinematic lighting, 
-1girl, solo, full body, centered composition, looking at viewer,
-(very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair,
-(thick black cat tail, long tail, black cat ears), dynamic pose,
-(style_by_ araneesama: 0.4),(style_by_ Blue-Senpai:1) (style_by_ Kurowa:0.8)"""
-
-# === NEGATIVE PROMPT ===
-NEGATIVE_PROMPT = "anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored, extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, bad proportions, lowres, bad_quality, robotic ears, robotic tail, furry"
-
-# === GEMINI INSTRUCTION ===
-PROMPT_ENGINEER_INSTRUCTION = """
-Act as a Danbooru Scene Generator for an anime character (Lady Nuggets).
-I will give you a Theme. You must output visual tags describing the OUTFIT, ACTION, and BACKGROUND.
-DO NOT describe the character's base features (hair/eyes/ears) as they are already fixed.
-
-RULES:
-1. OUTPUT: "tag1, tag2, tag3..."
-2. FOCUS: Outfit, Action, Background, Lighting.
-3. NSFW: Allowed if implied by theme.
-
-Theme: {theme}
-"""
-
-def load_themes():
-    with open(THEMES_FILE, "r") as f:
-        return [line.strip() for line in f if line.strip()]
+def get_openrouter_prompt(theme):
+    if not OPENROUTER_KEY:
+        return None
+        
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_KEY}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": "google/gemini-2.0-flash-exp:free", # Free & Vision capable
+        "messages": [
+            {"role": "user", "content": PROMPT_ENGINEER_INSTRUCTION.format(theme=theme)}
+        ]
+    }
+    try:
+        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
+        if response.status_code == 200:
+            content = response.json()['choices'][0]['message']['content']
+            return f"{OC_PROMPT}, {content.strip()}"
+        else:
+            print(f"⚠️ OpenRouter Error: {response.status_code} - {response.text}")
+            return None
+    except Exception as e:
+        print(f"⚠️ OpenRouter Exception: {e}")
+        return None
 
 def get_ai_prompt(theme):
-    # Retry Logic (Handle "Too Many Requests")
-    for attempt in range(3):
-        try:
-            response = model.generate_content(PROMPT_ENGINEER_INSTRUCTION.format(theme=theme))
-            scene_tags = response.text.strip()
-            return f"{OC_PROMPT}, {scene_tags}"
-        except Exception as e:
-            if "429" in str(e):
-                print(f"⚠️ Quota hit. Waiting 10s... (Attempt {attempt+1}/3)")
-                time.sleep(10)
-            else:
-                print(f"⚠️ Gemini Error: {e}")
-                break
+    # 1. Try OpenRouter (Priority if Key exists)
+    if OPENROUTER_KEY:
+        prompt = get_openrouter_prompt(theme)
+        if prompt:
+            return prompt
+
+    # 2. Try Gemini Direct (Legacy/Backup)
+    if GEMINI_KEY:
+        for attempt in range(3):
+            try:
+                response = model.generate_content(PROMPT_ENGINEER_INSTRUCTION.format(theme=theme))
+                scene_tags = response.text.strip()
+                return f"{OC_PROMPT}, {scene_tags}"
+            except Exception as e:
+                if "429" in str(e):
+                    print(f"⚠️ Quota hit. Waiting 10s... (Attempt {attempt+1}/3)")
+                    time.sleep(10)
+                else:
+                    print(f"⚠️ Gemini Error: {e}")
+                    break
     
-    # Fallback: Just use the theme directly
+    # 3. Fallback
     print("⚠️ Using Fallback Prompt (No AI Expansion)")
     return f"{OC_PROMPT}, {theme}"
 
