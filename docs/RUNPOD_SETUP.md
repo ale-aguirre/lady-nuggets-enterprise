@@ -36,39 +36,27 @@ Busca en "Community Cloud" usando el filtro y activa el switch **"Spot"**:
     *   **Volume Disk:** 20GB está bien.
 6.  Dale a **"Continue"** -> **"Deploy"**.
 
-## 4. Instalación (Solo la primera vez)
-Cuando el Pod diga "Running" (corriendo), dale al botón **"Connect"** y luego a **"Jupyter Lab"**.
-Se abrirá una ventana tipo carpeta de archivos. Abre la **Terminal** (icono negro abajo) y pega esto:
+## 2. Instalación y Ejecución (Todo en Uno)
+Cuando el Pod diga "Running", dale a **"Connect"** -> **"Jupyter Lab"**, abre la **Terminal** y pega esto:
 
 ```bash
-# 1. Clonar tu Proyecto
+# 1. Traer el código
 git clone https://github.com/ale-aguirre/lady-nuggets-enterprise.git
-
-# 2. Entrar y Preparar
 cd lady-nuggets-enterprise
 
-# 3. Instalar librerías y ADETAILER (¡Importante!)
-pip install -r requirements.txt
-
-# Instalar Adetailer (Para que factory.py funcione perfecto)
-cd /workspace/stable-diffusion-webui/extensions
-git clone https://github.com/Bing-su/adetailer.git
-
-# 4. Descargar el Modelo OneObsession (Directo de Civitai para no gastar tu internet)
-cd /workspace/stable-diffusion-webui/models/Stable-diffusion
-wget https://civitai.com/api/download/models/302970 --content-disposition
-# (Nota: Verifica que ese sea el ID correcto del modelo OneObsession en Civitai, si no, cámbialo)
+# 2. EJECUTAR EL ULTRA SCRIPT (Auto-detecta todo)
+chmod +x scripts/runpod_ultra.sh
+./scripts/runpod_ultra.sh --count 6
 ```
 
-## 5. ¡A Generar!
-```bash
-# Volver a tu carpeta
-cd /workspace/lady-nuggets-enterprise
+*El `--count 6` al final es la cantidad de imágenes. Cámbialo si quieres más.*
 
-# Generar 50 imágenes
-python3 scripts/factory.py --count 50
+> **💡 Opciones adicionales:**
+> - `./scripts/runpod_ultra.sh --help` → Ver todas las opciones
+> - `./scripts/runpod_ultra.sh --no-model` → Saltar descarga de modelo
+> - `./scripts/runpod_ultra.sh --verbose` → Más detalles
 
-# Empaquetar
-./scripts/pack_images.sh
-```
-*(Luego descarga el ZIP y BORRA el Pod).*
+## 3. Finalizar
+1.  Cuando el script termine, verás un archivo `.zip` en la lista de la izquierda.
+2.  Click derecho -> **Download**.
+3.  Ve al Dashboard de RunPod y **TERMINA** el Pod (Icono de Basura).
