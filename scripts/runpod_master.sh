@@ -52,6 +52,23 @@ else
     echo "   -> No loras.txt found. Skipping."
 fi
 
+# 3.9. START REFORGE SERVER (Critical)
+echo "🚀 [3.9/5] Launching Stable Diffusion (API Mode)..."
+cd /workspace/stable-diffusion-webui || exit
+# Start in background, no UI, API enabled
+nohup ./webui.sh --nowebui --api --listen --port 7860 > /workspace/reforge.log 2>&1 &
+SERVER_PID=$!
+
+echo "⏳ Waiting for Server (Port 7860)... This takes ~30s."
+for i in {1..120}; do
+    if curl -s http://127.0.0.1:7860 > /dev/null; then
+        echo "✅ Server is UP!"
+        break
+    fi
+    echo -n "."
+    sleep 2
+done
+
 # 4. Generate Images
 cd /workspace/lady-nuggets-enterprise || exit
 COUNT=${1:-6} # Default to 6 images if not specified
