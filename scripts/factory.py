@@ -68,6 +68,10 @@ def get_openrouter_prompt(theme):
     print("⚠️ OpenRouter: All free models failed.")
     return None
 
+def load_themes():
+    with open(THEMES_FILE, "r") as f:
+        return [line.strip() for line in f if line.strip()]
+
 def get_ai_prompt(theme):
     # 1. Try OpenRouter (Priority if Key exists)
     if OPENROUTER_KEY:
