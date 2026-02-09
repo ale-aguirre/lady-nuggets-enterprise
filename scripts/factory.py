@@ -58,16 +58,17 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
 # === LADY NUGGETS CHARACTER DEFINITION ===
-OC_BASE = """(masterpiece:1.3), (best quality:1.3), (EyesHD:1.2), (4k,8k,Ultra HD), ultra-detailed, sharp focus, ray tracing, best lighting, cinematic lighting, 
+# Using author-recommended quality tags for OneObsession
+OC_BASE = """masterpiece, best quality, amazing quality, very aesthetic, absurdres, newest, depth of field, highres,
 1girl, solo, full body, centered composition, looking at viewer, 
 (very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, 
 narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, 
 (thick black cat tail, long tail, black cat ears), dynamic pose"""
 
-# === NEGATIVE PROMPT ===
-NEGATIVE_PROMPT = """anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, 
-(worst quality, bad quality:1.2), jpeg artifacts, username, censored, extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, 
-lowres, bad_quality, robotic ears, robotic tail, furry, extra limbs, missing limbs"""
+# === NEGATIVE PROMPT (Author Recommended) ===
+NEGATIVE_PROMPT = """worst quality, normal quality, anatomical nonsense, bad anatomy, interlocked fingers, extra fingers, 
+watermark, simple background, transparent, low quality, logo, text, signature, 
+face backlighting, backlighting, extra limbs, missing limbs, bad_hands, bad_feet, ugly, deformed"""
 
 # === LLM MODELS ===
 GROQ_MODELS = [
@@ -302,17 +303,18 @@ def generate_image(prompt, negative_prompt, model_name):
     """Call SD API with retry logic"""
     log('gen', f"Starting generation with model: {model_name}")
     
-    # === OPTIMIZED SETTINGS FOR HIGH-END GPU ===
+    # === OPTIMIZED FOR OneObsession v19 (Per Author Recommendations) ===
+    # Source: https://civitai.com/models/1318945/one-obsession
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
         
-        # Quality settings (optimized for RTX 3090/4090)
-        "steps": 35,                    # More steps = better quality
-        "cfg_scale": 7.0,               # Slightly higher for better prompt adherence
-        "width": 768,                   # Larger base = more detail
-        "height": 1152,                 # 2:3 aspect ratio
-        "sampler_name": "DPM++ 2M SDE Karras",  # Better sampler for quality
+        # Author recommended settings
+        "steps": 30,                    # Author recommends 25-35
+        "cfg_scale": 5.0,               # Author recommends 3-6 (NOT higher!)
+        "width": 832,                   # Author recommended: 832x1216
+        "height": 1216,                 # Optimal for this model
+        "sampler_name": "Euler a",      # Author specifically recommends Euler a
         "batch_size": 1,
         
         "override_settings": {
@@ -320,20 +322,20 @@ def generate_image(prompt, negative_prompt, model_name):
             "CLIP_stop_at_last_layers": 2
         },
         
-        # Hires Fix (2x upscale = 1536x2304 final)
+        # Hires Fix (2x upscale = 1664x2432 final)
         "enable_hr": True,
         "hr_scale": 2.0,
-        "hr_upscaler": "4x-UltraSharp",  # Best upscaler if available
-        "denoising_strength": 0.4,       # Slightly higher for more detail
-        "hr_second_pass_steps": 20,      # More steps in hires pass
+        "hr_upscaler": "Latent",         # Latent works well with this model
+        "denoising_strength": 0.35,      # Lower = preserve more detail
+        "hr_second_pass_steps": 15,
         
-        # ADetailer for face/hands
+        # ADetailer for face enhancement
         "alwayson_scripts": {
             "ADetailer": {
                 "args": [{
                     "ad_model": "face_yolov8n.pt",
                     "ad_confidence": 0.3,
-                    "ad_denoising_strength": 0.4
+                    "ad_denoising_strength": 0.35
                 }]
             }
         }
