@@ -51,7 +51,30 @@ def log(level, msg):
     print(f"{icon} {msg}{Colors.END}")
 
 # === CONFIG ===
-REFORGE_API = os.getenv("REFORGE_API", "http://127.0.0.1:7860")
+def detect_sd_api():
+    """Dynamically detect SD API port (7860, 7861, 7862)"""
+    env_api = os.getenv("REFORGE_API", "")
+    
+    # Try ports in order
+    ports = [7860, 7861, 7862]
+    for port in ports:
+        try:
+            resp = requests.get(f"http://127.0.0.1:{port}/sdapi/v1/sd-models", timeout=3)
+            if resp.status_code == 200:
+                url = f"http://127.0.0.1:{port}"
+                log('success', f"SD API auto-detected on port {port}")
+                return url
+        except:
+            pass
+    
+    # Fallback to env or default
+    if env_api:
+        log('warning', f"No active SD API found, using .env: {env_api}")
+        return env_api
+    log('warning', "No SD API found, defaulting to port 7860")
+    return "http://127.0.0.1:7860"
+
+REFORGE_API = detect_sd_api()
 OPENROUTER_KEY = os.getenv("OPENROUTER_KEY")
 GROQ_KEY = os.getenv("GROQ_KEY")
 OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
