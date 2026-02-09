@@ -1,3 +1,12 @@
 # Add LoRA download URLs here (Civitai 'Download' link)
 # Format: URL
-# Example: https://civitai.com/api/download/models/123456
+# === INDISPENSABLE ===
+https://civitai.com/models/971952 # Stabilizer (ilnaick) -> TODO: User verify download link
+https://civitai.com/api/download/models/2241189?type=Model&format=SafeTensor # Aesthetic Quality (Masterpiece) v3.0
+
+# === OCCASIONAL / STYLE ===
+https://civitai.com/api/download/models/2157565 # Link 1
+https://civitai.com/api/download/models/1894466 # Link 2
+
+# === CHARACTER (OC) ===
+https://huggingface.co/Emberx/ladynuggets/resolve/main/LadyNuggets.safetensors?download=true
