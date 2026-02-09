@@ -26,21 +26,30 @@ OC_PROMPT = """(masterpiece:1.3), (best quality:1.3), (EyesHD:1.2), (4k,8k,Ultra
 (very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair,
 (thick black cat tail, long tail, black cat ears), dynamic pose"""
 
-# === NEGATIVE PROMPT ===
-NEGATIVE_PROMPT = "anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored, extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, bad proportions, lowres, bad_quality, robotic ears, robotic tail, furry"
+# === LO-RA ACTIVATION (Indispensable) ===
+# NOTE: Filenames must match what is downloaded. SD will ignore if missing.
+# We assume standard filenames or user renames them.
+LORA_BLOCK = "<lora:stabilizer_ilnaick:0.6> <lora:aesthetic_quality:0.8> <lora:LadyNuggets:0.6>"
 
-# === GEMINI INSTRUCTION ===
+# === GEMINI/GROQ INSTRUCTION (Intelligent V2) ===
 PROMPT_ENGINEER_INSTRUCTION = """
-Act as a Danbooru Scene Generator for an anime character (Lady Nuggets).
-I will give you a Theme. You must output visual tags describing the OUTFIT, ACTION, and BACKGROUND.
-DO NOT describe the character's base features (hair/eyes/ears) as they are already fixed.
-
-RULES:
-1. OUTPUT: "tag1, tag2, tag3..."
-2. FOCUS: Outfit, Action, Background, Lighting.
-3. NSFW: Allowed if implied by theme.
-
+Act as a Senior Anime Art Director. Your goal is to create a high-coherence, visually stunning prompt for an anime illustration.
+Character: Lady Nuggets (Already defined by OC_PROMPT).
 Theme: {theme}
+
+INSTRUCTIONS:
+1. Analyze the Theme: Determine the best Outfit, Location, and Action to express this theme.
+2. COHERENCE: The Outfit must match the Location. The Pose must match the Action.
+3. QUALITY: Use precise Danbooru tags.
+4. OUTPUT FORMAT: Return a single string of comma-separated tags.
+
+STRUCTURE YOUR "MENTAL" DRAFT (Do not output logic, only tags):
+- Outfit: Detailed, textures, fashion-focused.
+- Location: Atmospheric, lighting, depth.
+- Pose: Dynamic, expressive.
+
+FINAL OUTPUT EXAMPLE:
+"wearing gothic lolita dress, lace trim, frills, standing in rose garden, moonlight, blue roses, petals in wind, slight smile, elegant pose, soft cinematic lighting"
 """
 
 if GEMINI_KEY:
@@ -91,8 +100,7 @@ def get_groq_prompt(theme):
             
             if response.status_code == 200:
                 content = response.json()['choices'][0]['message']['content']
-                if content:
-                    return f"{OC_PROMPT}, {content.strip()}"
+                    return f"{OC_PROMPT}, {content.strip()}, {LORA_BLOCK}"
             else:
                 print(f"   -> Failed ({response.status_code}) Body: {response.text}")
                 
@@ -125,8 +133,7 @@ def get_openrouter_prompt(theme):
             
             if response.status_code == 200:
                 content = response.json()['choices'][0]['message']['content']
-                if content:
-                    return f"{OC_PROMPT}, {content.strip()}"
+                    return f"{OC_PROMPT}, {content.strip()}, {LORA_BLOCK}"
             else:
                 print(f"   -> Failed ({response.status_code})")
                 
@@ -164,7 +171,7 @@ def get_ai_prompt(theme):
             try:
                 response = model.generate_content(PROMPT_ENGINEER_INSTRUCTION.format(theme=theme))
                 scene_tags = response.text.strip()
-                return f"{OC_PROMPT}, {scene_tags}"
+                return f"{OC_PROMPT}, {scene_tags}, {LORA_BLOCK}"
             except Exception as e:
                 if "429" in str(e):
                     print(f"   ⚠️ Gemini Quota hit. Waiting 10s... (Attempt {attempt+1}/3)")
