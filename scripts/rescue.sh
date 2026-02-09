@@ -15,7 +15,7 @@ export REFORGE_API="http://127.0.0.1:7860"
 
 # FIX: Google Gemini / httplib2 dependency conflict
 echo "🔧 Fixing dependencies..."
-pip install "pyparsing<3" > /dev/null 2>&1
+pip install "pyparsing==2.4.7" > /dev/null 2>&1
 
 # 2. Start Server (CLEAN & DIRECT)
 echo "🚀 Launching Server (Direct Python Mode)..."

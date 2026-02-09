@@ -5,8 +5,21 @@ import json
 import base64
 import time
 from datetime import datetime
+from datetime import datetime
 from dotenv import load_dotenv
-import google.generativeai as genai
+
+# OPTIONAL: Google GenAI (Fails on some RunPod envs due to httplib2/pyparsing conflicts)
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    genai = None
+    GEMINI_AVAILABLE = False
+    print("⚠️ Gemini SDK not available (Dependency conflict). Gemini will be disabled.")
+except Exception:
+    genai = None
+    GEMINI_AVAILABLE = False
+    print("⚠️ Gemini SDK error. Gemini will be disabled.")
 
 # LOAD ENV
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -52,7 +65,7 @@ FINAL OUTPUT EXAMPLE:
 "wearing gothic lolita dress, lace trim, frills, standing in rose garden, moonlight, blue roses, petals in wind, slight smile, elegant pose, soft cinematic lighting"
 """
 
-if GEMINI_KEY:
+if GEMINI_KEY and GEMINI_AVAILABLE:
     try:
         genai.configure(api_key=GEMINI_KEY)
         model = genai.GenerativeModel('gemini-2.0-flash')
