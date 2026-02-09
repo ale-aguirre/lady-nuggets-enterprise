@@ -8,6 +8,10 @@ echo "============================================="
 # 1. Environment Setup
 echo "📦 [1/5] Installing Dependencies..."
 pip install -r requirements.txt > /dev/null 2>&1
+apt-get update && apt-get install -y zip > /dev/null 2>&1
+
+# 1.5. RunPod specific config
+export REFORGE_API="http://127.0.0.1:7860"
 
 # 2. Adetailer (Face Fixer)
 echo "💄 [2/5] Checking Adetailer..."
