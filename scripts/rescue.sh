@@ -46,10 +46,10 @@ BATCH_ID=$(date +"%Y%m%d_%H%M%S")
 BATCH_DIR="/workspace/lady-nuggets-enterprise/content/batch_${BATCH_ID}"
 mkdir -p "$BATCH_DIR"
 
-echo "🏭 Generating 10 Images..."
+echo "🏭 Generating 2 Images..."
 cd /workspace/lady-nuggets-enterprise || exit
 # Export keys if they were set in terminal, otherwise fallback
-python3 scripts/factory.py --count 10 --output "$BATCH_DIR"
+python3 scripts/factory.py --count 2 --output "$BATCH_DIR"
 
 # 4. Zip
 EXIT_CODE=$?
