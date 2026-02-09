@@ -51,13 +51,13 @@ if GEMINI_KEY:
     except:
         pass
 
-# FREE MODELS (OpenRouter)
+# FREE MODELS (OpenRouter - Verified Feb 2025)
 FREE_MODELS = [
+    "google/gemini-2.0-flash-exp:free",      # Experimental but often free/fast
+    "meta-llama/llama-3.3-70b-instruct:free", # High quality choice
+    "microsoft/phi-3-medium-128k-instruct:free",
     "meta-llama/llama-3-8b-instruct:free",
-    "microsoft/phi-3-mini-128k-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
-    "openchat/openchat-7b:free",
-    "huggingfaceh4/zephyr-7b-beta:free"
+    "openrouter/auto"                        # OpenRouter's auto-router for free models
 ]
 
 # GROQ MODELS (Fastest - Verified Feb 2025)
