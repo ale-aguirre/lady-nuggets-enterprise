@@ -1,0 +1,39 @@
+# CURATED TAGS (High Quality / Anime Style)
+# Use these to enhance your themes in themes.txt
+
+# --- LIGHTING & ATMOSPHERE ---
+cinematic lighting, soft lighting, rim lighting, volumetric lighting, god rays,
+sunset, night, dark, dim, glowing, bioluminescence, lens flare, ray tracing,
+studio lighting, dramatic shadows, neon lights, cyberpunk atmosphere,
+natural light, sunlight, dappled sunlight, bloom
+
+# --- ANGLE & COMPOSITION ---
+dynamic angle, from below, from above, fisheye, cowboy shot, close-up,
+portrait, full body, wide shot, dutch angle, selfie, looking at viewer,
+looking back, over shoulder, pov, depth of field, bokeh
+
+# --- OUTFIT & STYLES ---
+# Costumes
+maid, school uniform, office lady, lingerie, bikini, latex, leather,
+stockings, thighhighs, garter straps, torn clothes, wet clothes,
+see-through, china dress, kimono, yukata, gothic lolita, steampunk,
+cyberpunk, sci-fi suit, armor, fantasy dress
+
+# Accessories
+glasses, choker, necklace, earrings, bracelet, gloves, hair ribbon,
+cat ears, bunny ears, tail, wings, horns, mask, eyepatch
+
+# --- ACTIONS & POSES ---
+sitting, standing, lying, kneeling, all fours, spreading legs,
+lifting skirt, biting lip, peace sign, heart hands, crossed legs,
+arms up, hands on hips, stretching, leaning forward, looking down,
+looking up, winking, blushing, embarrassed, angry, happy, smile
+
+# --- BACKGROUNDS ---
+# Indoor
+bedroom, classroom, library, cafe, bar, office, spaceship, dungeon,
+castle, laboratory, onsen, studio, stage
+
+# Outdoor
+beach, forest, city, street, park, rooftop, ruins, desert, snow,
+ocean, space, sky, clouds, nebula, stars, fireworks, rain

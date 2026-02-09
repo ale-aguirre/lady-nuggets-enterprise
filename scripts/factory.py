@@ -24,8 +24,7 @@ THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 OC_PROMPT = """(masterpiece:1.3), (best quality:1.3), (EyesHD:1.2), (4k,8k,Ultra HD), ultra-detailed, sharp focus, ray tracing, best lighting, cinematic lighting, 
 1girl, solo, full body, centered composition, looking at viewer,
 (very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair,
-(thick black cat tail, long tail, black cat ears), dynamic pose,
-(style_by_ araneesama: 0.4),(style_by_ Blue-Senpai:1) (style_by_ Kurowa:0.8)"""
+(thick black cat tail, long tail, black cat ears), dynamic pose"""
 
 # === NEGATIVE PROMPT ===
 NEGATIVE_PROMPT = "anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored, extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, bad proportions, lowres, bad_quality, robotic ears, robotic tail, furry"
