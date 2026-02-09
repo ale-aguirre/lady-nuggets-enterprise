@@ -240,20 +240,57 @@ else
 fi
 
 # ==============================================================================
-# STEP 5: LORA CHECK
+# STEP 5: EXTENSIONS & LORA SETUP
 # ==============================================================================
 echo ""
-echo -e "${BLUE}🧩 [5/7] Checking LoRA Files...${NC}"
+echo -e "${BLUE}🧩 [5/7] Setting up Extensions & LoRAs...${NC}"
 
+# --- ADetailer Extension (fixes hands & faces) ---
+ADETAILER_DIR="$SD_DIR/extensions/adetailer"
+if [ -d "$ADETAILER_DIR" ]; then
+    echo -e "   ${GREEN}✅ ADetailer extension installed${NC}"
+else
+    echo -e "   ${CYAN}⬇️  Installing ADetailer (face + hand fix)...${NC}"
+    cd "$SD_DIR/extensions"
+    git clone https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git adetailer 2>/dev/null || true
+    if [ -d "$ADETAILER_DIR" ]; then
+        echo -e "   ${GREEN}✅ ADetailer installed! (server restart needed)${NC}"
+        NEED_SERVER_START=true
+    else
+        echo -e "   ${YELLOW}⚠️  ADetailer install failed. Will generate without it.${NC}"
+    fi
+    cd "$WORK_DIR"
+fi
+
+# --- LoRA Files ---
 LORA_DIR="$SD_DIR/models/Lora"
 mkdir -p "$LORA_DIR" 2>/dev/null || true
 
-# Check if LadyNuggets LoRA exists
-if ls "$LORA_DIR"/LadyNuggets* 2>/dev/null | head -1 > /dev/null; then
-    echo -e "   ${GREEN}✅ LadyNuggets LoRA found${NC}"
+# Aesthetic Quality LoRA (quality booster - always download)
+AESTHETIC_LORA="$LORA_DIR/aesthetic_quality_masterpiece.safetensors"
+if [ -f "$AESTHETIC_LORA" ]; then
+    echo -e "   ${GREEN}✅ Aesthetic Quality LoRA found${NC}"
 else
-    echo -e "   ${YELLOW}⚠️  LadyNuggets LoRA not found${NC}"
-    echo "      Factory will work without it (using base prompt only)"
+    if [ -n "$CIVITAI_TOKEN" ]; then
+        echo -e "   ${CYAN}⬇️  Downloading Aesthetic Quality LoRA...${NC}"
+        curl -L -o "$AESTHETIC_LORA" \
+            "https://civitai.com/api/download/models/2241189?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null
+        if [ -f "$AESTHETIC_LORA" ] && [ "$(stat -c%s "$AESTHETIC_LORA" 2>/dev/null || stat -f%z "$AESTHETIC_LORA" 2>/dev/null || echo "0")" -gt 1000000 ]; then
+            echo -e "   ${GREEN}✅ Aesthetic LoRA downloaded${NC}"
+        else
+            echo -e "   ${YELLOW}⚠️  Aesthetic LoRA download may have failed${NC}"
+            rm -f "$AESTHETIC_LORA" 2>/dev/null
+        fi
+    else
+        echo -e "   ${YELLOW}⚠️  CIVITAI_TOKEN not set, can't download Aesthetic LoRA${NC}"
+    fi
+fi
+
+# LadyNuggets Character LoRA (optional)
+if ls "$LORA_DIR"/LadyNuggets* 2>/dev/null | head -1 > /dev/null; then
+    echo -e "   ${GREEN}✅ LadyNuggets LoRA found (use --lora to activate)${NC}"
+else
+    echo -e "   ${YELLOW}ℹ️  LadyNuggets LoRA not found (character LoRA optional)${NC}"
 fi
 
 # ==============================================================================

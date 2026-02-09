@@ -89,8 +89,8 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
 # === LADY NUGGETS CHARACTER DEFINITION ===
-# Using author-recommended quality tags for OneObsession
-OC_BASE = """masterpiece, best quality, amazing quality, very aesthetic, absurdres, newest, depth of field, highres,
+# Illustrious-specific quality tokens: 'very awa' and 'source_anime' are trained into the model
+OC_BASE = """masterpiece, best quality, amazing quality, very awa, very aesthetic, absurdres, newest, source_anime, depth of field, highres,
 1girl, solo, full body, centered composition, looking at viewer, 
 (very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, 
 narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, 
@@ -165,20 +165,38 @@ def build_lora_block():
     loras = detect_loras()
     lora_tags = []
     
-    # Priority LoRAs
-    priority_loras = {
-        'LadyNuggets': 0.7,
-        'ladynuggets': 0.7,
-        'lady_nuggets': 0.7,
+    # Aesthetic/Quality LoRAs (always use if available)
+    aesthetic_loras = {
+        'aesthetic_quality': 0.5,
+        'masterpiece': 0.5,
+        'stabilizer': 0.4,
+    }
+    
+    # Character LoRAs (only if --lora flag)
+    character_loras = {
+        'LadyNuggets': 0.6,
+        'ladynuggets': 0.6,
+        'lady_nuggets': 0.6,
     }
     
     for lora in loras:
         name = lora.get('name', '')
-        for key, weight in priority_loras.items():
-            if key.lower() in name.lower():
+        name_lower = name.lower()
+        
+        # Always apply aesthetic LoRAs
+        for key, weight in aesthetic_loras.items():
+            if key.lower() in name_lower:
                 lora_tags.append(f"<lora:{name}:{weight}>")
-                log('success', f"LoRA activated: {name} @ {weight}")
+                log('success', f"Aesthetic LoRA: {name} @ {weight}")
                 break
+        else:
+            # Character LoRAs only with --lora flag
+            if USE_LORA:
+                for key, weight in character_loras.items():
+                    if key.lower() in name_lower:
+                        lora_tags.append(f"<lora:{name}:{weight}>")
+                        log('success', f"Character LoRA: {name} @ {weight}")
+                        break
     
     return ", ".join(lora_tags) if lora_tags else ""
 
@@ -379,19 +397,18 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=1.5, no_h
         payload.update({
             "enable_hr": True,
             "hr_scale": upscale_factor,
-            "hr_upscaler": "Latent",
-            "denoising_strength": 0.45,
-            "hr_second_pass_steps": 20,
+            "hr_upscaler": "R-ESRGAN 4x+ Anime6B",  # Best for anime (preserves clean lines)
+            "denoising_strength": 0.35,               # Lower = preserve anatomy from 1st pass
+            "hr_second_pass_steps": 15,               # Enough for R-ESRGAN
         })
         final_w = int(832 * upscale_factor)
         final_h = int(1216 * upscale_factor)
-        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h}")
+        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h} (R-ESRGAN Anime)")
     else:
         payload["enable_hr"] = False
         log('info', "Hires Fix: DISABLED (base 832x1216)")
     
-    
-    # ADetailer: only add if extension is installed on this server
+    # ADetailer: auto-detect and enable with face + hand fix
     try:
         scripts_resp = requests.get(f"{REFORGE_API}/sdapi/v1/scripts", timeout=5)
         if scripts_resp.status_code == 200:
@@ -400,24 +417,37 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=1.5, no_h
             if "adetailer" in available_scripts:
                 payload["alwayson_scripts"] = {
                     "ADetailer": {
-                        "args": [{
-                            "ad_model": "face_yolov8n.pt",
-                            "ad_confidence": 0.3,
-                            "ad_denoising_strength": 0.35
-                        }]
+                        "args": [
+                            {   # Slot 1: Face fix
+                                "ad_model": "face_yolov8n.pt",
+                                "ad_prompt": "detailed face, beautiful eyes, perfect face",
+                                "ad_negative_prompt": "ugly face, deformed face",
+                                "ad_confidence": 0.3,
+                                "ad_denoising_strength": 0.35
+                            },
+                            {   # Slot 2: Hand fix (the 6-finger killer)
+                                "ad_model": "hand_yolov8n.pt",
+                                "ad_prompt": "detailed hands, perfect fingers, 5 fingers",
+                                "ad_negative_prompt": "extra fingers, fewer fingers, bad hands, 6 fingers",
+                                "ad_confidence": 0.3,
+                                "ad_denoising_strength": 0.4
+                            }
+                        ]
                     }
                 }
-                log('info', "ADetailer enabled (face enhancement)")
+                log('success', "ADetailer: face + hand fix enabled")
             else:
-                log('warning', "ADetailer not installed, skipping face enhancement")
+                log('warning', "ADetailer not installed — run: cd /workspace/stable-diffusion-webui/extensions && git clone https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git adetailer")
     except:
-        log('warning', "Could not check scripts, skipping ADetailer")
+        log('warning', "Could not check scripts endpoint")
     
     # Log payload summary
     print(f"\n{Colors.WHITE}📜 Generation Config:{Colors.END}")
     print(f"   Model: {model_name}")
-    print(f"   Size: {payload['width']}x{payload['height']} → {int(payload['width']*2)}x{int(payload['height']*2)} (Hires)")
-    print(f"   Steps: {payload['steps']} + {payload['hr_second_pass_steps']} (Hires)")
+    hr_info = f" → {int(832*upscale_factor)}x{int(1216*upscale_factor)} (Hires {upscale_factor}x)" if use_hires else ""
+    print(f"   Size: {payload['width']}x{payload['height']}{hr_info}")
+    has_ad = "alwayson_scripts" in payload and "ADetailer" in payload.get("alwayson_scripts", {})
+    print(f"   ADetailer: {'✅ face+hands' if has_ad else '❌ not available'}")
     print(f"   Prompt: {prompt[:80]}...")
     
     # Retry logic
