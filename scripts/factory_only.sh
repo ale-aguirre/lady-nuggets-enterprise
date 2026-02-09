@@ -12,10 +12,14 @@ BATCH_ID=$(date +"%Y%m%d_%H%M%S")
 BATCH_DIR="content/batch_${BATCH_ID}"
 mkdir -p "$BATCH_DIR"
 
+# FIX: Google Gemini / httplib2 dependency conflict
+echo "🔧 Fixing dependencies (Just in case)..."
+pip install "pyparsing==2.4.7" > /dev/null 2>&1
+
 # 3. Generate
-echo "🏭 Generating 10 Images (Batch: $BATCH_ID)..."
+echo "🏭 Generating 2 Images (Batch: $BATCH_ID)..."
 cd /workspace/lady-nuggets-enterprise || exit
-python3 scripts/factory.py --count 10 --output "$BATCH_DIR"
+python3 scripts/factory.py --count 2 --output "$BATCH_DIR"
 
 # 4. Zip
 echo "📦 Compressing..."
