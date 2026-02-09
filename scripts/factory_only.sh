@@ -7,7 +7,20 @@
 # export OPENROUTER_KEY="YOUR_KEY"
 export REFORGE_API="http://127.0.0.1:7860"
 
-# 2. Prepare Batch Folder
+# 2. Check & Download Model (User reported missing model)
+MODEL_DIR="/workspace/stable-diffusion-webui/models/Stable-diffusion"
+MODEL_NAME="oneObsession_v19Atypical.safetensors"
+MODEL_URL="https://civitai.com/api/download/models/302970"
+
+if [ ! -f "$MODEL_DIR/$MODEL_NAME" ]; then
+    echo "⬇️ Model Check: MISSING! Downloading OneObsession now..."
+    mkdir -p "$MODEL_DIR"
+    wget -q --show-progress "$MODEL_URL" -O "$MODEL_DIR/$MODEL_NAME"
+else
+    echo "✅ Model Check: OneObsession Found."
+fi
+
+# 2b. Prepare Batch Folder
 BATCH_ID=$(date +"%Y%m%d_%H%M%S")
 BATCH_DIR="content/batch_${BATCH_ID}"
 mkdir -p "$BATCH_DIR"
