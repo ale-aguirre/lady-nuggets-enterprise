@@ -55,7 +55,13 @@ fi
 # 3.9. START REFORGE SERVER (Critical)
 echo "🚀 [3.9/5] Launching Stable Diffusion (API Mode)..."
 cd /workspace/stable-diffusion-webui || exit
-# Start in background, no UI, API enabled
+
+# FIX: Allow Root Execution (RunPod runs as root)
+sed -i 's/can_run_as_root=0/can_run_as_root=1/g' webui.sh || true
+# Alternative patch if variable name differs
+sed -i 's/ERROR: This script must not be launched as root/echo "Running as root..."/g' webui.sh || true
+
+# Start in background
 nohup ./webui.sh --nowebui --api --listen --port 7860 > /workspace/reforge.log 2>&1 &
 SERVER_PID=$!
 
