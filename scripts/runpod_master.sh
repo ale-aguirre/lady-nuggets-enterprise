@@ -59,15 +59,29 @@ cd /workspace/stable-diffusion-webui || exit
 nohup ./webui.sh --nowebui --api --listen --port 7860 > /workspace/reforge.log 2>&1 &
 SERVER_PID=$!
 
-echo "⏳ Waiting for Server (Port 7860)... This takes ~30s."
-for i in {1..120}; do
+echo "⏳ Waiting for Server (Port 7860)... This takes up to 10 mins on first run."
+for i in {1..300}; do
     if curl -s http://127.0.0.1:7860 > /dev/null; then
         echo "✅ Server is UP!"
         break
     fi
-    echo -n "."
+    # Show last log line every 5s to keep user informed
+    if (( i % 5 == 0 )); then
+        echo ""
+        tail -n 1 /workspace/reforge.log
+    else
+        echo -n "."
+    fi
     sleep 2
 done
+
+# Check if still down
+if ! curl -s http://127.0.0.1:7860 > /dev/null; then
+    echo "❌ Server failed to start in time!"
+    echo "📜 LOG DUMP:"
+    cat /workspace/reforge.log
+    exit 1
+fi
 
 # 4. Generate Images
 cd /workspace/lady-nuggets-enterprise || exit
