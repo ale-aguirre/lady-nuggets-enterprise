@@ -252,7 +252,7 @@ if [ -d "$ADETAILER_DIR" ]; then
 else
     echo -e "   ${CYAN}⬇️  Installing ADetailer (face + hand fix)...${NC}"
     cd "$SD_DIR/extensions"
-    git clone https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git adetailer 2>/dev/null || true
+    GIT_TERMINAL_PROMPT=0 git clone https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git adetailer 2>/dev/null || true
     if [ -d "$ADETAILER_DIR" ]; then
         echo -e "   ${GREEN}✅ ADetailer installed! (server restart needed)${NC}"
         NEED_SERVER_START=true
