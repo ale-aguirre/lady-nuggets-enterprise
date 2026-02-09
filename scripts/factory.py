@@ -302,14 +302,17 @@ def generate_image(prompt, negative_prompt, model_name):
     """Call SD API with retry logic"""
     log('gen', f"Starting generation with model: {model_name}")
     
+    # === OPTIMIZED SETTINGS FOR HIGH-END GPU ===
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
-        "steps": 28,
-        "cfg_scale": 6.0,
-        "width": 512,
-        "height": 768,
-        "sampler_name": "Euler a",
+        
+        # Quality settings (optimized for RTX 3090/4090)
+        "steps": 35,                    # More steps = better quality
+        "cfg_scale": 7.0,               # Slightly higher for better prompt adherence
+        "width": 768,                   # Larger base = more detail
+        "height": 1152,                 # 2:3 aspect ratio
+        "sampler_name": "DPM++ 2M SDE Karras",  # Better sampler for quality
         "batch_size": 1,
         
         "override_settings": {
@@ -317,20 +320,20 @@ def generate_image(prompt, negative_prompt, model_name):
             "CLIP_stop_at_last_layers": 2
         },
         
-        # Hires Fix
+        # Hires Fix (2x upscale = 1536x2304 final)
         "enable_hr": True,
         "hr_scale": 2.0,
-        "hr_upscaler": "Latent",
-        "denoising_strength": 0.35,
-        "hr_second_pass_steps": 15,
+        "hr_upscaler": "4x-UltraSharp",  # Best upscaler if available
+        "denoising_strength": 0.4,       # Slightly higher for more detail
+        "hr_second_pass_steps": 20,      # More steps in hires pass
         
-        # ADetailer
+        # ADetailer for face/hands
         "alwayson_scripts": {
             "ADetailer": {
                 "args": [{
                     "ad_model": "face_yolov8n.pt",
                     "ad_confidence": 0.3,
-                    "ad_denoising_strength": 0.35
+                    "ad_denoising_strength": 0.4
                 }]
             }
         }
