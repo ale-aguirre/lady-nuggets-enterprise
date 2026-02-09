@@ -37,7 +37,7 @@ THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 OC_PROMPT = "(masterpiece:1.3), (best quality:1.3), (EyesHD:1.2), (4k,8k,Ultra HD), ultra-detailed, sharp focus, ray tracing, best lighting, cinematic lighting, 1girl, solo, full body, centered composition, looking at viewer, (very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, (thick black cat tail, long tail, black cat ears), dynamic pose"
 
 # === NEGATIVE PROMPT ===
-NEGATIVE_PROMPT = "anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored, extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, bad proportions, lowres, bad_quality, robotic ears, robotic tail, furry"
+NEGATIVE_PROMPT = "anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored, extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, lowres, bad_quality, robotic ears, robotic tail, furry"
 
 # === LO-RA ACTIVATION (Indispensable) ===
 # NOTE: Filenames must match what is downloaded. SD will ignore if missing.
@@ -199,6 +199,30 @@ def get_ai_prompt(theme):
     print("❌ AI Failed. Using Fallback Prompt (No expansion).")
     return f"{OC_PROMPT}, {theme}"
 
+def log_server_state():
+    print("\n🔍 [DEBUG] Server Inventory:")
+    try:
+        # 1. Force Refresh Checkpoints (Crucial for new downloads)
+        requests.post(f"{REFORGE_API}/sdapi/v1/refresh-checkpoints")
+        
+        # 2. List Models
+        m_resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models")
+        if m_resp.status_code == 200:
+            models = [m['title'] for m in m_resp.json()]
+            print(f"   📂 Checkpoints ({len(models)}):")
+            for m in models:
+                print(f"      - {m}")
+        
+        # LoRAs
+        l_resp = requests.get(f"{REFORGE_API}/sdapi/v1/loras")
+        if l_resp.status_code == 200:
+            loras = [l['name'] for l in l_resp.json()]
+            print(f"   🧩 LoRAs ({len(loras)}):")
+            for l in loras:
+                print(f"      - {l}")
+    except Exception as e:
+        print(f"   ⚠️ Failed to query server info: {e}")
+
 def call_reforge_api(prompt):
     # SETTINGS
     HIRES_FIX = True
@@ -223,7 +247,7 @@ def call_reforge_api(prompt):
                 model_payload = {"sd_model_checkpoint": target_model}
     except:
         pass
-
+    
     # === PAYLOAD DEFINITION ===
     payload = {
         "prompt": prompt,
@@ -273,28 +297,24 @@ def call_reforge_api(prompt):
     except Exception as e:
         print(f"❌ API Connection Error: {e}")
         return None
-        # ...
 
-def log_server_state():
-    print("\n🔍 [DEBUG] Server Inventory:")
-    try:
-        # Checkpoints
-        m_resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models")
-        if m_resp.status_code == 200:
-            models = [m['title'] for m in m_resp.json()]
-            print(f"   📂 Checkpoints ({len(models)}):")
-            for m in models:
-                print(f"      - {m}")
+def save_image(data, prompt):
+    if not data or 'images' not in data:
+        return
         
-        # LoRAs
-        l_resp = requests.get(f"{REFORGE_API}/sdapi/v1/loras")
-        if l_resp.status_code == 200:
-            loras = [l['name'] for l in l_resp.json()]
-            print(f"   🧩 LoRAs ({len(loras)}):")
-            for l in loras:
-                print(f"      - {l}")
-    except Exception as e:
-        print(f"   ⚠️ Failed to query server info: {e}")
+    for i, img_str in enumerate(data['images']):
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = f"raw_{timestamp}_{i}.png"
+        path = os.path.join(OUTPUT_DIR, filename)
+        
+        with open(path, "wb") as f:
+            f.write(base64.b64decode(img_str))
+            
+        meta = {"prompt": prompt, "timestamp": timestamp}
+        with open(path.replace(".png", ".json"), "w") as f:
+            json.dump(meta, f, indent=2)
+            
+        print(f"💾 Saved to Disk: {filename}")
 
 def main():
     parser = argparse.ArgumentParser(description="Lady Nuggets Factory V9")
