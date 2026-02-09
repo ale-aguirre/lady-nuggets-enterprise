@@ -60,11 +60,11 @@ FREE_MODELS = [
     "huggingfaceh4/zephyr-7b-beta:free"
 ]
 
-# GROQ MODELS (Fastest)
+# GROQ MODELS (Fastest - Verified Feb 2025)
 GROQ_MODELS = [
-    "llama3-70b-8192",
-    "mixtral-8x7b-32768",
-    "gemma-7b-it" 
+    "llama-3.3-70b-versatile",  # New Flagship
+    "llama-3.1-8b-instant",     # Ultra Fast
+    "mixtral-8x7b-32768"        # Classic / Stable
 ]
 
 def get_groq_prompt(theme):
@@ -83,7 +83,8 @@ def get_groq_prompt(theme):
             "messages": [
                 {"role": "user", "content": PROMPT_ENGINEER_INSTRUCTION.format(theme=theme)}
             ],
-            "temperature": 0.7
+            "temperature": 0.7,
+            "max_tokens": 1024  # Prevent context window errors
         }
         try:
             print(f"⚡ Groq: Trying {model_name}...")
@@ -94,7 +95,7 @@ def get_groq_prompt(theme):
                 if content:
                     return f"{OC_PROMPT}, {content.strip()}"
             else:
-                print(f"   -> Failed ({response.status_code})")
+                print(f"   -> Failed ({response.status_code}) Body: {response.text}")
                 
         except Exception as e:
             print(f"   -> Error: {e}")
