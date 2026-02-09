@@ -23,31 +23,50 @@ if GEMINI_KEY:
     genai.configure(api_key=GEMINI_KEY)
     model = genai.GenerativeModel('gemini-2.0-flash')
 
+# FREE MODELS (OpenRouter)
+FREE_MODELS = [
+    "meta-llama/llama-3-8b-instruct:free",
+    "microsoft/phi-3-mini-128k-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "openchat/openchat-7b:free",
+    "huggingfaceh4/zephyr-7b-beta:free"
+]
+
 def get_openrouter_prompt(theme):
     if not OPENROUTER_KEY:
         return None
         
     headers = {
         "Authorization": f"Bearer {OPENROUTER_KEY}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://ladynuggets.com", # Required by OpenRouter
+        "X-Title": "Lady Nuggets Factory"
     }
-    payload = {
-        "model": "google/gemini-2.0-flash-exp:free", # Free & Vision capable
-        "messages": [
-            {"role": "user", "content": PROMPT_ENGINEER_INSTRUCTION.format(theme=theme)}
-        ]
-    }
-    try:
-        response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload)
-        if response.status_code == 200:
-            content = response.json()['choices'][0]['message']['content']
-            return f"{OC_PROMPT}, {content.strip()}"
-        else:
-            print(f"⚠️ OpenRouter Error: {response.status_code} - {response.text}")
-            return None
-    except Exception as e:
-        print(f"⚠️ OpenRouter Exception: {e}")
-        return None
+    
+    # Try different free models until one works
+    for model_name in FREE_MODELS:
+        payload = {
+            "model": model_name,
+            "messages": [
+                {"role": "user", "content": PROMPT_ENGINEER_INSTRUCTION.format(theme=theme)}
+            ]
+        }
+        try:
+            print(f"🤖 OpenRouter: Trying {model_name}...")
+            response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=10)
+            
+            if response.status_code == 200:
+                content = response.json()['choices'][0]['message']['content']
+                if content:
+                    return f"{OC_PROMPT}, {content.strip()}"
+            else:
+                print(f"   -> Failed ({response.status_code})")
+                
+        except Exception as e:
+            print(f"   -> Error: {e}")
+            
+    print("⚠️ OpenRouter: All free models failed.")
+    return None
 
 def get_ai_prompt(theme):
     # 1. Try OpenRouter (Priority if Key exists)
