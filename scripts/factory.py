@@ -157,12 +157,15 @@ def detect_loras():
         return []
 
 def build_lora_block():
-    """Build LoRA activation string based on available LoRAs"""
-    if not USE_LORA:
-        log('info', "LoRA disabled (use --lora to enable)")
+    """Build LoRA activation string based on available LoRAs.
+    Aesthetic LoRAs: ALWAYS applied (quality boost).
+    Character LoRAs: only with --lora flag.
+    """
+    loras = detect_loras()
+    if not loras:
+        log('info', "No LoRAs available on server")
         return ""
     
-    loras = detect_loras()
     lora_tags = []
     
     # Aesthetic/Quality LoRAs (always use if available)
@@ -184,19 +187,24 @@ def build_lora_block():
         name_lower = name.lower()
         
         # Always apply aesthetic LoRAs
+        matched_aesthetic = False
         for key, weight in aesthetic_loras.items():
             if key.lower() in name_lower:
                 lora_tags.append(f"<lora:{name}:{weight}>")
                 log('success', f"Aesthetic LoRA: {name} @ {weight}")
+                matched_aesthetic = True
                 break
-        else:
-            # Character LoRAs only with --lora flag
-            if USE_LORA:
-                for key, weight in character_loras.items():
-                    if key.lower() in name_lower:
-                        lora_tags.append(f"<lora:{name}:{weight}>")
-                        log('success', f"Character LoRA: {name} @ {weight}")
-                        break
+        
+        # Character LoRAs only with --lora flag
+        if not matched_aesthetic and USE_LORA:
+            for key, weight in character_loras.items():
+                if key.lower() in name_lower:
+                    lora_tags.append(f"<lora:{name}:{weight}>")
+                    log('success', f"Character LoRA: {name} @ {weight}")
+                    break
+    
+    if not USE_LORA:
+        log('info', "Character LoRA disabled (use --lora to enable)")
     
     return ", ".join(lora_tags) if lora_tags else ""
 

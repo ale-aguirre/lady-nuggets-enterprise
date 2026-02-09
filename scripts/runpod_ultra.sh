@@ -255,15 +255,22 @@ if [ -d "$ADETAILER_DIR" ]; then
     echo -e "   ${GREEN}✅ ADetailer extension installed${NC}"
 else
     echo -e "   ${CYAN}⬇️  Installing ADetailer (face + hand fix)...${NC}"
-    cd "$SD_DIR/extensions"
-    GIT_TERMINAL_PROMPT=0 git clone https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git adetailer 2>/dev/null || true
+    
+    # Method 1: git clone (Anapnoe fork - most common for Reforge/Forge)
+    GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git "$ADETAILER_DIR" 2>/dev/null
+    
+    if [ ! -d "$ADETAILER_DIR" ]; then
+        # Method 2: Original repo
+        GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Bing-su/adetailer.git "$ADETAILER_DIR" 2>/dev/null
+    fi
+    
     if [ -d "$ADETAILER_DIR" ]; then
-        echo -e "   ${GREEN}✅ ADetailer installed! (server restart needed)${NC}"
+        echo -e "   ${GREEN}✅ ADetailer installed! Server will restart to load it.${NC}"
         NEED_SERVER_START=true
     else
-        echo -e "   ${YELLOW}⚠️  ADetailer install failed. Will generate without it.${NC}"
+        echo -e "   ${YELLOW}⚠️  ADetailer auto-install failed (network issue?)${NC}"
+        echo -e "   ${YELLOW}   Manual: cd $SD_DIR/extensions && git clone https://github.com/Bing-su/adetailer.git${NC}"
     fi
-    cd "$WORK_DIR"
 fi
 
 # --- LoRA Files ---
