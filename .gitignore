@@ -4,3 +4,5 @@ content/raw/
 content/curated/
 *.DS_Store
 *.zip
+.env
+config/.env
