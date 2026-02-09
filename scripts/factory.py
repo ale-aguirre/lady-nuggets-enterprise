@@ -262,10 +262,20 @@ import argparse
 def main():
     parser = argparse.ArgumentParser(description="Lady Nuggets Factory V9")
     parser.add_argument("--count", type=int, default=1, help="Number of images to generate")
+    parser.add_argument("--output", type=str, default=None, help="Custom output directory")
     args = parser.parse_args()
+
+    # Determine Output Directory
+    global OUTPUT_DIR
+    if args.output:
+        OUTPUT_DIR = os.path.join(BASE_DIR, args.output)
+    
+    if not os.path.exists(OUTPUT_DIR):
+        os.makedirs(OUTPUT_DIR)
 
     themes = load_themes()
     print(f"✨ Factory V9: Lady Nuggets Ultimate (Target: {args.count} images)")
+    print(f"📂 Output Directory: {OUTPUT_DIR}")
     
     if not themes:
         print("Please add themes to themes.txt")

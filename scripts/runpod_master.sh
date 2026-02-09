@@ -72,16 +72,21 @@ done
 # 4. Generate Images
 cd /workspace/lady-nuggets-enterprise || exit
 COUNT=${1:-6} # Default to 6 images if not specified
-echo "🏭 [4/5] Generating $COUNT Images..."
-python3 scripts/factory.py --count "$COUNT"
 
-# 5. Pack Results
+BATCH_ID=$(date +"%Y%m%d_%H%M%S")
+BATCH_DIR="content/batch_${BATCH_ID}"
+mkdir -p "$BATCH_DIR"
+
+echo "🏭 [4/5] Generating $COUNT Images (Batch: $BATCH_ID)..."
+python3 scripts/factory.py --count "$COUNT" --output "$BATCH_DIR"
+
+# 5. Pack Results (ONLY NEW IMAGES)
 echo "📦 [5/5] Compressing Results..."
-chmod +x scripts/pack_images.sh
-./scripts/pack_images.sh
+ZIP_NAME="lady_nuggets_${BATCH_ID}.zip"
+zip -r "$ZIP_NAME" "$BATCH_DIR"
 
 echo "============================================="
 echo "✅ MISSION COMPLETE!"
-echo "👉 1. Right-Click the 'lady_nuggets_batch_....zip' file -> Download."
+echo "👉 1. Right-Click the '$ZIP_NAME' file -> Download."
 echo "👉 2. Go to RunPod Dashboard -> TERMINATE POD (Trash Icon)."
 echo "============================================="
