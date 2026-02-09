@@ -13,15 +13,15 @@ sleep 2
 # 1. Setup Env
 export REFORGE_API="http://127.0.0.1:7860"
 
-# 2. Start Server (CLEAN)
-echo "🚀 Launching Server (Force Port 7860)..."
+# 2. Start Server (CLEAN & DIRECT)
+echo "🚀 Launching Server (Direct Python Mode)..."
 cd /workspace/stable-diffusion-webui || exit
 
-# Patch root check again just in case
-sed -i 's/can_run_as_root=0/can_run_as_root=1/g' webui.sh || true
+# CLEANUP ENV to prevent port 3000 conflicts
+unset COMMANDLINE_ARGS
 
-# LAUNCH
-nohup ./webui.sh --nowebui --api --listen --port 7860 > /workspace/reforge.log 2>&1 &
+# LAUNCH DIRECTLY (Bypass webui.sh wrapper)
+nohup python3 launch.py --nowebui --api --listen --port 7860 --xformers --enable-insecure-extension-access > /workspace/reforge.log 2>&1 &
 SERVER_PID=$!
 
 echo "⏳ Waiting for Server..."
