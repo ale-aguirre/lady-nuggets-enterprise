@@ -1,0 +1,22 @@
+# Danbooru Tag Cheatsheet (Manual Reference)
+
+## Quality (Must Have)
+masterpiece, best quality, amazing quality, very awa, absurdres, newest, very aesthetic, depth of field, highres, source_anime
+
+## Lighting & Atmosphere
+cinematic lighting, soft lighting, rim lighting, volumetric lighting, god rays, sunset, night, dark, dim, glowing, bioluminescence, lens flare, ray tracing
+
+## Camera Angles
+dynamic angle, from below, from above, fisheye, cowboy shot, close-up, portrait, full body, wide shot, dutch angle
+
+## Anatomy & Body
+1girl, solo, breasts, large breasts, huge breasts, cleavage, nipples, pussy, navel, collarbone, detailed skin, shiny skin, sweat, blush, open mouth, tongue
+
+## Cloths / Fetish
+school uniform, maid, office lady, lingerie, bikini, latex, leather, stockings, thighhighs, garter straps, torn clothes, wet clothes, see-through
+
+## Actions
+sitting, standing, lying, kneeling, all fours, spreading legs, lifting skirt, biting lip, looking at viewer, looking back, selfie
+
+## Styles (Artist Emulation tags for Pony/Illustrious)
+style_by_araneesama, style_by_bluesenpai, style_by_kurowa, style_by_shameimaru, style_by_homunculus

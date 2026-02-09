@@ -1,0 +1,7 @@
+google-generativeai
+selenium
+discord.py
+pillow
+python-dotenv
+flask
+requests

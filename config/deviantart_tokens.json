@@ -1,0 +1,8 @@
+{
+  "access_token": "df4f7a42f4e93c37a04841f78f2a1ecb10e9a4fd457ce53295",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "refresh_token": "8a86259c022859f33f7dffe109d8ee15bae9d91e",
+  "scope": "publish user stash browse",
+  "status": "success"
+}
