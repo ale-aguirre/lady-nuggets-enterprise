@@ -99,12 +99,15 @@ def load_themes():
 def get_ai_prompt(theme):
     # 1. Try OpenRouter (Priority if Key exists)
     if OPENROUTER_KEY:
+        print("🔄 AI: Attempting OpenRouter Free Models...")
         prompt = get_openrouter_prompt(theme)
         if prompt:
             return prompt
+        print("⚠️ OpenRouter failed. Switching to Gemini...")
 
     # 2. Try Gemini Direct (Legacy/Backup)
     if GEMINI_KEY:
+        print("✨ AI: Using Gemini Flash (Direct)...")
         for attempt in range(3):
             try:
                 response = model.generate_content(PROMPT_ENGINEER_INSTRUCTION.format(theme=theme))
@@ -112,14 +115,14 @@ def get_ai_prompt(theme):
                 return f"{OC_PROMPT}, {scene_tags}"
             except Exception as e:
                 if "429" in str(e):
-                    print(f"⚠️ Quota hit. Waiting 10s... (Attempt {attempt+1}/3)")
+                    print(f"   ⚠️ Gemini Quota hit. Waiting 10s... (Attempt {attempt+1}/3)")
                     time.sleep(10)
                 else:
-                    print(f"⚠️ Gemini Error: {e}")
+                    print(f"   ⚠️ Gemini Error: {e}")
                     break
     
     # 3. Fallback
-    print("⚠️ Using Fallback Prompt (No AI Expansion)")
+    print("❌ AI Failed. Using Fallback Prompt (No expansion).")
     return f"{OC_PROMPT}, {theme}"
 
 def call_reforge_api(prompt):
