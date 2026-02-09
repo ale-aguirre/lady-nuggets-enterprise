@@ -52,18 +52,26 @@ def log(level, msg):
 
 # === CONFIG ===
 def detect_sd_api():
-    """Dynamically detect SD API port (7860, 7861, 7862)"""
+    """Dynamically detect SD API port (7860, 7861, 7862).
+    Validates response is real SD API (JSON), not nginx proxy (HTML 405)."""
     env_api = os.getenv("REFORGE_API", "")
     
-    # Try ports in order
+    # Try ports in order of priority
     ports = [7860, 7861, 7862]
     for port in ports:
         try:
-            resp = requests.get(f"http://127.0.0.1:{port}/sdapi/v1/sd-models", timeout=3)
+            url = f"http://127.0.0.1:{port}"
+            resp = requests.get(f"{url}/sdapi/v1/sd-models", timeout=3)
             if resp.status_code == 200:
-                url = f"http://127.0.0.1:{port}"
-                log('success', f"SD API auto-detected on port {port}")
-                return url
+                # Verify it's actual JSON from SD API, not nginx HTML
+                try:
+                    data = resp.json()
+                    if isinstance(data, list):
+                        log('success', f"SD API verified on port {port} ({len(data)} models)")
+                        return url
+                except (ValueError, TypeError):
+                    log('warning', f"Port {port} responded but not valid SD API (nginx proxy?)")
+                    continue
         except:
             pass
     
