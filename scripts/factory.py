@@ -118,23 +118,30 @@ def save_image(data, prompt):
             
         print(f"✅ Saved (V9 HighRes): {filename}")
 
+import argparse
+
 def main():
+    parser = argparse.ArgumentParser(description="Lady Nuggets Factory V9")
+    parser.add_argument("--count", type=int, default=1, help="Number of images to generate")
+    args = parser.parse_args()
+
     themes = load_themes()
-    print("✨ Factory V9: Lady Nuggets Ultimate (OneObsession + Hires + Gemini)")
+    print(f"✨ Factory V9: Lady Nuggets Ultimate (Target: {args.count} images)")
     
     if not themes:
         print("Please add themes to themes.txt")
         return
 
-    # Generate only 1 image for test
-    theme = random.choice(themes)
-    print(f"\n[Generation] Theme: '{theme}'...")
-    
-    full_prompt = get_ai_prompt(theme)
-    print(f"🏷️  Full Prompt: {full_prompt[:80]}...") 
-    
-    data = call_reforge_api(full_prompt)
-    save_image(data, full_prompt)
+    for i in range(args.count):
+        theme = random.choice(themes)
+        print(f"\n[{i+1}/{args.count}] Theme: '{theme}'...")
+        
+        full_prompt = get_ai_prompt(theme)
+        print(f"🏷️  Full Prompt: {full_prompt[:80]}...") 
+        
+        data = call_reforge_api(full_prompt)
+        save_image(data, full_prompt)
+        time.sleep(1)
 
 if __name__ == "__main__":
     main()
