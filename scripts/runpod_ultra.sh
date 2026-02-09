@@ -192,12 +192,14 @@ echo -e "   ${GREEN}✅ Dependencies installed${NC}"
 echo ""
 echo -e "${BLUE}🎨 [4/7] Checking Model Checkpoint...${NC}"
 
+# CivitAI API Key (add to .env for automated downloads)
+CIVITAI_TOKEN="${CIVITAI_TOKEN:-}"
+
 if [ "$SKIP_MODEL_DOWNLOAD" = true ]; then
     echo -e "   ${YELLOW}⏭️  Skipping model download (--no-model flag)${NC}"
 else
     MODEL_DIR="$SD_DIR/models/Stable-diffusion"
     MODEL_NAME="oneObsession_v19Atypical.safetensors"
-    MODEL_URL="https://civitai.com/api/download/models/2443982?type=Model&format=SafeTensor&size=pruned&fp=fp16"
     MODEL_PATH="$MODEL_DIR/$MODEL_NAME"
 
     mkdir -p "$MODEL_DIR" 2>/dev/null || true
@@ -205,18 +207,35 @@ else
     if [ -f "$MODEL_PATH" ]; then
         FILE_SIZE=$(stat -c%s "$MODEL_PATH" 2>/dev/null || stat -f%z "$MODEL_PATH" 2>/dev/null || echo "0")
         if [ "$FILE_SIZE" -lt 1000000 ]; then
-            echo -e "   ${YELLOW}⚠️  Model file corrupted. Removing...${NC}"
+            echo -e "   ${YELLOW}⚠️  Model file corrupted (${FILE_SIZE} bytes). Removing...${NC}"
             rm -f "$MODEL_PATH"
         fi
     fi
 
     if [ ! -f "$MODEL_PATH" ]; then
-        echo -e "   ${CYAN}⬇️  Downloading OneObsession v19 (~2GB)...${NC}"
-        wget -q --show-progress "$MODEL_URL" -O "$MODEL_PATH" || {
-            echo -e "   ${YELLOW}⚠️  Download failed. Will use available model.${NC}"
-        }
+        if [ -n "$CIVITAI_TOKEN" ]; then
+            echo -e "   ${CYAN}⬇️  Downloading OneObsession v19 (~6GB)...${NC}"
+            # IMPORTANT: CivitAI requires token as query parameter, NOT header
+            curl -L -o "$MODEL_PATH" \
+                "https://civitai.com/api/download/models/2443982?type=Model&format=SafeTensor&size=pruned&fp=fp16&token=${CIVITAI_TOKEN}"
+            
+            # Verify download
+            if [ -f "$MODEL_PATH" ]; then
+                FILE_SIZE=$(stat -c%s "$MODEL_PATH" 2>/dev/null || stat -f%z "$MODEL_PATH" 2>/dev/null || echo "0")
+                if [ "$FILE_SIZE" -gt 1000000000 ]; then
+                    echo -e "   ${GREEN}✅ Model downloaded successfully!${NC}"
+                else
+                    echo -e "   ${YELLOW}⚠️  Download may be incomplete. Will use available model.${NC}"
+                fi
+            fi
+        else
+            echo -e "   ${YELLOW}⚠️  CIVITAI_TOKEN not set. Cannot download model.${NC}"
+            echo -e "   ${CYAN}💡 To enable: export CIVITAI_TOKEN=your_api_key${NC}"
+            echo -e "   ${WHITE}   Will use any available model.${NC}"
+        fi
     else
-        echo -e "   ${GREEN}✅ Model exists: $MODEL_NAME${NC}"
+        FILE_SIZE_MB=$(($(stat -c%s "$MODEL_PATH" 2>/dev/null || stat -f%z "$MODEL_PATH" 2>/dev/null || echo "0") / 1024 / 1024))
+        echo -e "   ${GREEN}✅ Model exists: $MODEL_NAME (${FILE_SIZE_MB}MB)${NC}"
     fi
 fi
 

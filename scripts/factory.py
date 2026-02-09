@@ -1,3 +1,16 @@
+#!/usr/bin/env python3
+"""
+🏭 LADY NUGGETS FACTORY V10 - PRODUCTION READY
+================================================
+Generates AI-enhanced images using Stable Diffusion with intelligent prompting.
+
+Features:
+- Multi-LLM support (Groq → OpenRouter fallback)
+- Detailed logging with colors
+- Robust error handling with retries
+- LoRA auto-detection
+"""
+
 import os
 import random
 import requests
@@ -8,292 +21,482 @@ import argparse
 from datetime import datetime
 from dotenv import load_dotenv
 
-# LOAD ENV
+# === LOAD ENV ===
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv(os.path.join(BASE_DIR, "config", ".env"))
 
-# CONFIG
+# === COLORS FOR TERMINAL ===
+class Colors:
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    WHITE = '\033[97m'
+    BOLD = '\033[1m'
+    END = '\033[0m'
+
+def log(level, msg):
+    """Colored logging"""
+    icons = {
+        'info': f"{Colors.BLUE}ℹ️ ",
+        'success': f"{Colors.GREEN}✅",
+        'warning': f"{Colors.YELLOW}⚠️ ",
+        'error': f"{Colors.RED}❌",
+        'debug': f"{Colors.CYAN}🔍",
+        'ai': f"{Colors.CYAN}🤖",
+        'gen': f"{Colors.GREEN}🎨",
+    }
+    icon = icons.get(level, "")
+    print(f"{icon} {msg}{Colors.END}")
+
+# === CONFIG ===
 REFORGE_API = os.getenv("REFORGE_API", "http://127.0.0.1:7860")
 OPENROUTER_KEY = os.getenv("OPENROUTER_KEY")
 GROQ_KEY = os.getenv("GROQ_KEY")
 OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
-# === LADY NUGGETS OC PROMPT (V9: High Quality) ===
-OC_PROMPT = "(masterpiece:1.3), (best quality:1.3), (EyesHD:1.2), (4k,8k,Ultra HD), ultra-detailed, sharp focus, ray tracing, best lighting, cinematic lighting, 1girl, solo, full body, centered composition, looking at viewer, (very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, (thick black cat tail, long tail, black cat ears), dynamic pose"
+# === LADY NUGGETS CHARACTER DEFINITION ===
+OC_BASE = """(masterpiece:1.3), (best quality:1.3), (EyesHD:1.2), (4k,8k,Ultra HD), ultra-detailed, sharp focus, ray tracing, best lighting, cinematic lighting, 
+1girl, solo, full body, centered composition, looking at viewer, 
+(very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, 
+narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, 
+(thick black cat tail, long tail, black cat ears), dynamic pose"""
 
 # === NEGATIVE PROMPT ===
-NEGATIVE_PROMPT = "anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored, extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, lowres, bad_quality, robotic ears, robotic tail, furry"
+NEGATIVE_PROMPT = """anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent, low quality, logo, text, signature, 
+(worst quality, bad quality:1.2), jpeg artifacts, username, censored, extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, 
+lowres, bad_quality, robotic ears, robotic tail, furry, extra limbs, missing limbs"""
 
-# === LO-RA ACTIVATION (Only Available) ===
-LORA_BLOCK = "<lora:LadyNuggets:0.8>"
-
-# === PROMPT INSTRUCTION ===
-PROMPT_ENGINEER_INSTRUCTION = """
-Act as a Senior Anime Art Director. Create a visually stunning prompt for an anime illustration.
-Character: Lady Nuggets (Already defined).
-Theme: {theme}
-
-INSTRUCTIONS:
-1. Analyze the Theme: Determine the best Outfit, Location, and Action.
-2. COHERENCE: The Outfit must match the Location. The Pose must match the Action.
-3. QUALITY: Use precise Danbooru tags.
-4. OUTPUT FORMAT: Return a single string of comma-separated tags.
-
-FINAL OUTPUT EXAMPLE:
-"wearing gothic lolita dress, lace trim, frills, standing in rose garden, moonlight, blue roses, petals in wind, slight smile, elegant pose, soft cinematic lighting"
-"""
-
-# GROQ MODELS (Fastest)
+# === LLM MODELS ===
 GROQ_MODELS = [
     "llama-3.3-70b-versatile",
     "llama-3.1-8b-instant",
-    "mixtral-8x7b-32768"
+    "mixtral-8x7b-32768",
+    "gemma2-9b-it"
 ]
 
-# FREE MODELS (OpenRouter)
-FREE_MODELS = [
+OPENROUTER_FREE_MODELS = [
     "meta-llama/llama-3.3-70b-instruct:free",
-    "meta-llama/llama-3-8b-instruct:free",
-    "openrouter/auto"
+    "google/gemini-2.0-flash-exp:free",
+    "mistralai/mistral-7b-instruct:free",
+    "qwen/qwen-2-7b-instruct:free",
 ]
 
-def get_groq_prompt(theme):
+# === PROMPT ENGINEER SYSTEM ===
+PROMPT_SYSTEM = """You are an expert Anime Art Director specialized in Danbooru-style prompts for Stable Diffusion.
+Your task is to create a scene prompt based on the given theme.
+
+RULES:
+1. OUTPUT ONLY comma-separated tags, NO explanations
+2. Include: outfit details, location, lighting, pose, expression
+3. Use precise Danbooru tags (e.g., "serafuku", not "school uniform")
+4. Outfit MUST match location (e.g., swimsuit for beach, not formal dress)
+5. Keep under 100 words
+
+EXAMPLES:
+Theme: "Witch Academy" → wearing black witch hat, gothic lolita dress, holding magic staff, standing in mystical library, ancient tomes, candlelight, mysterious smile, elegant pose
+Theme: "Beach Day" → wearing white bikini, sarong, standing on sandy beach, ocean waves, sunset lighting, playful pose, hair blowing in wind, holding sun hat"""
+
+def detect_loras():
+    """Detect available LoRAs from server"""
+    try:
+        resp = requests.get(f"{REFORGE_API}/sdapi/v1/loras", timeout=5)
+        if resp.status_code == 200:
+            loras = resp.json()
+            log('debug', f"Found {len(loras)} LoRAs: {[l['name'] for l in loras]}")
+            return loras
+        return []
+    except Exception as e:
+        log('warning', f"Could not fetch LoRAs: {e}")
+        return []
+
+def build_lora_block():
+    """Build LoRA activation string based on available LoRAs"""
+    loras = detect_loras()
+    lora_tags = []
+    
+    # Priority LoRAs
+    priority_loras = {
+        'LadyNuggets': 0.8,
+        'ladynuggets': 0.8,
+        'lady_nuggets': 0.8,
+    }
+    
+    for lora in loras:
+        name = lora.get('name', '')
+        for key, weight in priority_loras.items():
+            if key.lower() in name.lower():
+                lora_tags.append(f"<lora:{name}:{weight}>")
+                log('success', f"LoRA activated: {name} @ {weight}")
+                break
+    
+    return ", ".join(lora_tags) if lora_tags else ""
+
+def call_groq(theme):
+    """Call Groq API for prompt generation"""
     if not GROQ_KEY:
         return None
-        
+    
     headers = {
         "Authorization": f"Bearer {GROQ_KEY}",
         "Content-Type": "application/json"
     }
     
-    for model_name in GROQ_MODELS:
-        payload = {
-            "model": model_name,
-            "messages": [
-                {"role": "user", "content": PROMPT_ENGINEER_INSTRUCTION.format(theme=theme)}
-            ],
-            "temperature": 0.7,
-            "max_tokens": 1024
-        }
+    for model in GROQ_MODELS:
+        log('ai', f"[Groq] Trying {model}...")
         try:
-            print(f"⚡ Groq: Trying {model_name}...")
-            response = requests.post("https://api.groq.com/openai/v1/chat/completions", headers=headers, json=payload, timeout=10)
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": PROMPT_SYSTEM},
+                    {"role": "user", "content": f"Create a prompt for theme: {theme}"}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 256
+            }
             
-            if response.status_code == 200:
-                content = response.json()['choices'][0]['message']['content']
-                if content:
-                    return f"{OC_PROMPT}, {content.strip()}, {LORA_BLOCK}"
+            resp = requests.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=15
+            )
+            
+            if resp.status_code == 200:
+                content = resp.json()['choices'][0]['message']['content'].strip()
+                # Clean up response (remove quotes, explanations)
+                content = content.strip('"\'')
+                if '\n' in content:
+                    content = content.split('\n')[0]  # Take first line only
+                log('success', f"[Groq] {model} responded!")
+                return content
             else:
-                print(f"   -> Failed ({response.status_code})")
+                log('warning', f"[Groq] {model} failed: {resp.status_code}")
                 
         except Exception as e:
-            print(f"   -> Error: {e}")
-            
+            log('warning', f"[Groq] {model} error: {str(e)[:50]}")
+    
     return None
 
-def get_openrouter_prompt(theme):
+def call_openrouter(theme):
+    """Call OpenRouter API for prompt generation"""
     if not OPENROUTER_KEY:
         return None
-        
+    
     headers = {
         "Authorization": f"Bearer {OPENROUTER_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://ladynuggets.com", 
+        "HTTP-Referer": "https://ladynuggets.com",
         "X-Title": "Lady Nuggets Factory"
     }
     
-    for model_name in FREE_MODELS:
-        payload = {
-            "model": model_name,
-            "messages": [
-                {"role": "user", "content": PROMPT_ENGINEER_INSTRUCTION.format(theme=theme)}
-            ]
-        }
+    for model in OPENROUTER_FREE_MODELS:
+        log('ai', f"[OpenRouter] Trying {model}...")
         try:
-            print(f"🤖 OpenRouter: Trying {model_name}...")
-            response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=10)
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": PROMPT_SYSTEM},
+                    {"role": "user", "content": f"Create a prompt for theme: {theme}"}
+                ],
+                "max_tokens": 256
+            }
             
-            if response.status_code == 200:
-                content = response.json()['choices'][0]['message']['content']
-                if content:
-                    return f"{OC_PROMPT}, {content.strip()}, {LORA_BLOCK}"
+            resp = requests.post(
+                "https://openrouter.ai/api/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=20
+            )
+            
+            if resp.status_code == 200:
+                content = resp.json()['choices'][0]['message']['content'].strip()
+                content = content.strip('"\'')
+                if '\n' in content:
+                    content = content.split('\n')[0]
+                log('success', f"[OpenRouter] {model} responded!")
+                return content
             else:
-                print(f"   -> Failed ({response.status_code})")
+                log('warning', f"[OpenRouter] {model} failed: {resp.status_code}")
                 
         except Exception as e:
-            print(f"   -> Error: {e}")
-            
+            log('warning', f"[OpenRouter] {model} error: {str(e)[:50]}")
+    
     return None
 
-def load_themes():
-    with open(THEMES_FILE, "r") as f:
-        return [line.strip() for line in f if line.strip()]
-
 def get_ai_prompt(theme):
-    # 1. Try Groq (FASTEST)
-    if GROQ_KEY:
-        print("⚡ AI: Attempting Groq...")
-        prompt = get_groq_prompt(theme)
-        if prompt:
-            return prompt
-
-    # 2. Try OpenRouter
-    if OPENROUTER_KEY:
-        print("🔄 AI: Attempting OpenRouter...")
-        prompt = get_openrouter_prompt(theme)
-        if prompt:
-            return prompt
+    """Get AI-generated prompt with fallback chain"""
+    log('ai', f"Generating prompt for theme: '{theme}'")
     
-    # 3. Fallback
-    print("❌ AI Failed. Using Fallback Prompt.")
-    return f"{OC_PROMPT}, {theme}, {LORA_BLOCK}"
+    # Try Groq first (fastest)
+    if GROQ_KEY:
+        result = call_groq(theme)
+        if result:
+            return result
+    
+    # Fallback to OpenRouter
+    if OPENROUTER_KEY:
+        result = call_openrouter(theme)
+        if result:
+            return result
+    
+    # Ultimate fallback
+    log('warning', "All AI providers failed. Using basic prompt.")
+    return f"{theme}, detailed background, dramatic lighting, dynamic pose"
+
+def get_model_info():
+    """Get current model info from server"""
+    try:
+        resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models", timeout=5)
+        if resp.status_code == 200:
+            models = resp.json()
+            # Find our preferred model
+            for m in models:
+                if 'oneobsession' in m['title'].lower():
+                    return m['title']
+                if 'obsession' in m['title'].lower():
+                    return m['title']
+            # Fallback to first anime-ish model
+            for m in models:
+                if any(x in m['title'].lower() for x in ['anime', 'manga', 'pony']):
+                    return m['title']
+            # Last resort: first model
+            return models[0]['title'] if models else None
+    except:
+        pass
+    return "oneObsession_v19Atypical.safetensors"
 
 def log_server_state():
-    print("\n🔍 [DEBUG] Server Inventory:")
+    """Log current server inventory"""
+    print(f"\n{Colors.CYAN}{'='*60}{Colors.END}")
+    log('debug', "Server Inventory:")
+    
     try:
-        requests.post(f"{REFORGE_API}/sdapi/v1/refresh-checkpoints")
+        # Refresh models
+        requests.post(f"{REFORGE_API}/sdapi/v1/refresh-checkpoints", timeout=5)
         
-        m_resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models")
-        if m_resp.status_code == 200:
-            models = [m['title'] for m in m_resp.json()]
-            print(f"   📂 Checkpoints ({len(models)}):")
+        # List models
+        resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models", timeout=5)
+        if resp.status_code == 200:
+            models = [m['title'] for m in resp.json()]
+            print(f"   {Colors.WHITE}📂 Checkpoints ({len(models)}):{Colors.END}")
             for m in models:
                 print(f"      - {m}")
         
-        l_resp = requests.get(f"{REFORGE_API}/sdapi/v1/loras")
-        if l_resp.status_code == 200:
-            loras = [l['name'] for l in l_resp.json()]
-            print(f"   🧩 LoRAs ({len(loras)}):")
+        # List LoRAs
+        resp = requests.get(f"{REFORGE_API}/sdapi/v1/loras", timeout=5)
+        if resp.status_code == 200:
+            loras = [l['name'] for l in resp.json()]
+            print(f"   {Colors.WHITE}🧩 LoRAs ({len(loras)}):{Colors.END}")
             for l in loras:
                 print(f"      - {l}")
+                
     except Exception as e:
-        print(f"   ⚠️ Failed to query server: {e}")
-
-def call_reforge_api(prompt):
-    # SETTINGS
-    HIRES_FIX = True
-    ADETAILER = True
+        log('error', f"Failed to query server: {e}")
     
-    print(f"🎨 Generating... [Hires: {'ON' if HIRES_FIX else 'OFF'}] [Adetailer: {'ON' if ADETAILER else 'OFF'}]")
+    print(f"{Colors.CYAN}{'='*60}{Colors.END}\n")
 
-    # === DYNAMIC MODEL SELECTION ===
-    model_payload = {"sd_model_checkpoint": "oneObsession_v19Atypical.safetensors"}
-    try:
-        models_resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models")
-        if models_resp.status_code == 200:
-            all_models = models_resp.json()
-            target_model = next((m['title'] for m in all_models if "oneobsession" in m['title'].lower()), None)
-            if not target_model:
-                target_model = next((m['title'] for m in all_models if "anime" in m['title'].lower()), None)
-            
-            if target_model:
-                print(f"🎯 Using Model: {target_model}")
-                model_payload = {"sd_model_checkpoint": target_model}
-    except:
-        pass
-
-    # === PAYLOAD ===
+def generate_image(prompt, negative_prompt, model_name):
+    """Call SD API with retry logic"""
+    log('gen', f"Starting generation with model: {model_name}")
+    
     payload = {
         "prompt": prompt,
-        "negative_prompt": NEGATIVE_PROMPT,
+        "negative_prompt": negative_prompt,
         "steps": 28,
         "cfg_scale": 6.0,
-        "width": 512,   # SD1.5 Native
-        "height": 768,  # SD1.5 Native
+        "width": 512,
+        "height": 768,
         "sampler_name": "Euler a",
         "batch_size": 1,
         
         "override_settings": {
-            **model_payload,
+            "sd_model_checkpoint": model_name,
             "CLIP_stop_at_last_layers": 2
         },
-
-        # HIRES FIX
-        "enable_hr": HIRES_FIX,
+        
+        # Hires Fix
+        "enable_hr": True,
         "hr_scale": 2.0,
-        "hr_upscaler": "Latent",  # ALWAYS AVAILABLE
+        "hr_upscaler": "Latent",
         "denoising_strength": 0.35,
         "hr_second_pass_steps": 15,
         
+        # ADetailer
         "alwayson_scripts": {
             "ADetailer": {
                 "args": [{
                     "ad_model": "face_yolov8n.pt",
-                    "ad_confidence": 0.3, 
+                    "ad_confidence": 0.3,
                     "ad_denoising_strength": 0.35
                 }]
-            } if ADETAILER else {}
+            }
         }
     }
     
-    print("\n📜 [DEBUG] Payload:")
-    print(json.dumps(payload, indent=2))
+    # Log payload summary
+    print(f"\n{Colors.WHITE}📜 Generation Config:{Colors.END}")
+    print(f"   Model: {model_name}")
+    print(f"   Size: {payload['width']}x{payload['height']} → {int(payload['width']*2)}x{int(payload['height']*2)} (Hires)")
+    print(f"   Steps: {payload['steps']} + {payload['hr_second_pass_steps']} (Hires)")
+    print(f"   Prompt: {prompt[:80]}...")
     
-    try:
-        response = requests.post(f"{REFORGE_API}/sdapi/v1/txt2img", json=payload)
-        if response.status_code == 200:
-            print("✅ Generation Successful!")
-            return response.json()
-        else:
-            print(f"❌ Generation Failed: {response.status_code}")
-            print(f"   Body: {response.text[:500]}")
-            return None
-    except Exception as e:
-        print(f"❌ API Connection Error: {e}")
-        return None
-
-def save_image(data, prompt):
-    if not data or 'images' not in data:
-        return
+    # Retry logic
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            log('info', f"Attempt {attempt + 1}/{max_retries}...")
+            resp = requests.post(
+                f"{REFORGE_API}/sdapi/v1/txt2img",
+                json=payload,
+                timeout=300  # 5 min timeout for generation
+            )
+            
+            if resp.status_code == 200:
+                log('success', "Generation complete!")
+                return resp.json()
+            else:
+                error_body = resp.text[:200]
+                log('error', f"Generation failed ({resp.status_code}): {error_body}")
+                
+                # Check for model error
+                if 'SafetensorError' in error_body:
+                    log('error', "Model file is corrupted! Please re-download.")
+                    return None
+                    
+        except requests.exceptions.Timeout:
+            log('warning', "Request timed out, retrying...")
+        except Exception as e:
+            log('error', f"Request error: {e}")
         
+        if attempt < max_retries - 1:
+            time.sleep(2)
+    
+    return None
+
+def save_image(data, prompt, output_dir):
+    """Save generated image and metadata"""
+    if not data or 'images' not in data:
+        return 0
+    
+    saved = 0
     for i, img_str in enumerate(data['images']):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"raw_{timestamp}_{i}.png"
-        path = os.path.join(OUTPUT_DIR, filename)
+        filename = f"lady_nuggets_{timestamp}_{i}.png"
+        path = os.path.join(output_dir, filename)
         
         with open(path, "wb") as f:
             f.write(base64.b64decode(img_str))
-            
-        meta = {"prompt": prompt, "timestamp": timestamp}
+        
+        # Save metadata
+        meta = {
+            "prompt": prompt,
+            "timestamp": timestamp,
+            "model": "oneObsession_v19"
+        }
         with open(path.replace(".png", ".json"), "w") as f:
             json.dump(meta, f, indent=2)
-            
-        print(f"💾 Saved: {filename}")
+        
+        log('success', f"Saved: {filename}")
+        saved += 1
+    
+    return saved
+
+def load_themes():
+    """Load themes from file"""
+    try:
+        with open(THEMES_FILE, "r") as f:
+            themes = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+        return themes
+    except FileNotFoundError:
+        log('warning', f"Themes file not found: {THEMES_FILE}")
+        return ["Fantasy Princess", "Cyber Punk", "Beach Day", "Gothic Lolita"]
 
 def main():
-    parser = argparse.ArgumentParser(description="Lady Nuggets Factory V9")
-    parser.add_argument("--count", type=int, default=1, help="Number of images")
+    parser = argparse.ArgumentParser(description="Lady Nuggets Factory V10")
+    parser.add_argument("--count", type=int, default=1, help="Number of images to generate")
     parser.add_argument("--output", type=str, default=None, help="Output directory")
+    parser.add_argument("--theme", type=str, default=None, help="Specific theme to use")
+    parser.add_argument("--debug", action="store_true", help="Show debug information")
     args = parser.parse_args()
-
-    global OUTPUT_DIR
-    if args.output:
-        OUTPUT_DIR = os.path.join(BASE_DIR, args.output)
     
-    if not os.path.exists(OUTPUT_DIR):
-        os.makedirs(OUTPUT_DIR)
-
+    # Setup output directory
+    output_dir = args.output if args.output else OUTPUT_DIR
+    if not output_dir.startswith('/'):
+        output_dir = os.path.join(BASE_DIR, output_dir)
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Banner
+    print(f"\n{Colors.CYAN}{'='*60}{Colors.END}")
+    print(f"{Colors.BOLD}🏭 LADY NUGGETS FACTORY V10{Colors.END}")
+    print(f"{Colors.CYAN}{'='*60}{Colors.END}")
+    print(f"   Target: {args.count} images")
+    print(f"   Output: {output_dir}")
+    print(f"   API: {REFORGE_API}")
+    
+    # Check API keys
+    print(f"\n{Colors.WHITE}🔑 API Keys:{Colors.END}")
+    if GROQ_KEY:
+        print(f"   {Colors.GREEN}✓{Colors.END} Groq: {GROQ_KEY[:15]}...")
+    else:
+        print(f"   {Colors.YELLOW}✗{Colors.END} Groq: Not configured")
+    
+    if OPENROUTER_KEY:
+        print(f"   {Colors.GREEN}✓{Colors.END} OpenRouter: {OPENROUTER_KEY[:15]}...")
+    else:
+        print(f"   {Colors.YELLOW}✗{Colors.END} OpenRouter: Not configured")
+    
+    # Log server state
     log_server_state()
-
-    themes = load_themes()
-    print(f"✨ Factory V9: Target: {args.count} images")
-    print(f"📂 Output: {OUTPUT_DIR}")
     
-    if not themes:
-        print("Please add themes to themes.txt")
-        return
-
+    # Get model and LoRAs
+    model_name = get_model_info()
+    lora_block = build_lora_block()
+    
+    log('info', f"Using model: {model_name}")
+    
+    # Load themes
+    themes = load_themes()
+    log('info', f"Loaded {len(themes)} themes")
+    
+    # Generation loop
+    total_saved = 0
     for i in range(args.count):
-        theme = random.choice(themes)
-        print(f"\n[{i+1}/{args.count}] Theme: '{theme}'...")
+        print(f"\n{Colors.BOLD}[{i+1}/{args.count}]{Colors.END}")
         
-        full_prompt = get_ai_prompt(theme)
-        print(f"🏷️  Prompt: {full_prompt[:80]}...") 
+        # Select theme
+        theme = args.theme if args.theme else random.choice(themes)
+        log('info', f"Theme: {theme}")
         
-        data = call_reforge_api(full_prompt)
-        save_image(data, full_prompt)
-        time.sleep(1)
+        # Get AI-generated scene prompt
+        scene_prompt = get_ai_prompt(theme)
+        
+        # Build full prompt
+        full_prompt = f"{OC_BASE}, {scene_prompt}"
+        if lora_block:
+            full_prompt += f", {lora_block}"
+        
+        # Generate
+        result = generate_image(full_prompt, NEGATIVE_PROMPT, model_name)
+        
+        # Save
+        if result:
+            saved = save_image(result, full_prompt, output_dir)
+            total_saved += saved
+        
+        # Small delay between generations
+        if i < args.count - 1:
+            time.sleep(1)
+    
+    # Summary
+    print(f"\n{Colors.GREEN}{'='*60}{Colors.END}")
+    print(f"{Colors.BOLD}✅ GENERATION COMPLETE{Colors.END}")
+    print(f"{Colors.GREEN}{'='*60}{Colors.END}")
+    print(f"   Images saved: {total_saved}/{args.count}")
+    print(f"   Location: {output_dir}")
+    print()
 
 if __name__ == "__main__":
     main()
