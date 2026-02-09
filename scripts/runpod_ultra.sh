@@ -93,29 +93,33 @@ echo "   📁 Working Directory: $WORK_DIR"
 echo "   📁 SD Directory: $SD_DIR"
 
 # ==============================================================================
-# STEP 1: FIND ACTIVE SERVER (PORT DETECTION)
+# STEP 1: FIND ACTIVE SD API (validates JSON, not nginx)
 # ==============================================================================
 echo ""
 echo -e "${BLUE}🔌 [1/7] Detecting SD API Server...${NC}"
 
 REFORGE_API=""
+NEED_SERVER_START=false
 PORTS_TO_CHECK=(7860 7861 7862 8080 3000)
 
 for port in "${PORTS_TO_CHECK[@]}"; do
-    if curl -s --connect-timeout 2 "http://127.0.0.1:$port/docs" > /dev/null 2>&1; then
-        echo -e "   ${GREEN}✅ Server found on port $port${NC}"
+    # Must return valid JSON from SD API, not nginx HTML
+    RESPONSE=$(curl -s --connect-timeout 2 "http://127.0.0.1:$port/sdapi/v1/sd-models" 2>/dev/null || echo "")
+    if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+        echo -e "   ${GREEN}✅ SD API verified on port $port${NC}"
         REFORGE_API="http://127.0.0.1:$port"
         break
+    elif [ -n "$RESPONSE" ]; then
+        echo -e "   ${YELLOW}⚠️  Port $port responds but not SD API (nginx proxy?)${NC}"
     fi
 done
 
 if [ -z "$REFORGE_API" ]; then
-    echo -e "   ${YELLOW}⚠️  No active server found. Will attempt to start one.${NC}"
+    echo -e "   ${YELLOW}⚠️  No active SD API found. Will start server on port 7860.${NC}"
     NEED_SERVER_START=true
     REFORGE_API="http://127.0.0.1:7860"
 else
     echo -e "   ${GREEN}✅ Using: $REFORGE_API${NC}"
-    NEED_SERVER_START=false
 fi
 
 export REFORGE_API
@@ -304,9 +308,11 @@ wait_for_server() {
     local waited=0
     echo -n "   ⏳ Waiting for server"
     while [ $waited -lt $max_wait ]; do
-        if curl -s --connect-timeout 2 "$REFORGE_API/docs" > /dev/null 2>&1; then
+        # Validate real SD API (JSON), not just HTTP response
+        RESPONSE=$(curl -s --connect-timeout 2 "http://127.0.0.1:7860/sdapi/v1/sd-models" 2>/dev/null || echo "")
+        if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
             echo ""
-            echo -e "   ${GREEN}✅ Server is UP!${NC}"
+            echo -e "   ${GREEN}✅ Server is UP! (API verified)${NC}"
             return 0
         fi
         echo -n "."
@@ -321,16 +327,18 @@ if [ "$NEED_SERVER_START" = true ]; then
     if [ "$IS_RUNPOD" = true ]; then
         echo -e "   ${CYAN}🔄 Starting Stable Diffusion server...${NC}"
         
-        # Kill any zombie processes
+        # Kill any existing processes
         pkill -f "launch.py" 2>/dev/null || true
-        sleep 2
+        sleep 3
         
         cd "$SD_DIR"
         
         # Fix root permission if needed
         sed -i 's/can_run_as_root=0/can_run_as_root=1/g' webui.sh 2>/dev/null || true
         
-        # Start server
+        # Start server with API on port 7860 (bypasses nginx)
+        REFORGE_API="http://127.0.0.1:7860"
+        export REFORGE_API
         nohup python3 launch.py --nowebui --api --listen --port 7860 --xformers > /workspace/reforge.log 2>&1 &
         
         if ! wait_for_server; then
@@ -339,13 +347,17 @@ if [ "$NEED_SERVER_START" = true ]; then
             tail -n 20 /workspace/reforge.log
             exit 1
         fi
+        
+        # Update REFORGE_API after server start
+        REFORGE_API="http://127.0.0.1:7860"
+        export REFORGE_API
     else
         echo -e "   ${RED}❌ No server running and cannot auto-start locally.${NC}"
         echo "      Please start your local SD server first, then run this script again."
         exit 1
     fi
 else
-    echo -e "   ${GREEN}✅ Server already running${NC}"
+    echo -e "   ${GREEN}✅ Server already running at $REFORGE_API${NC}"
 fi
 
 # Verify server responds to API
