@@ -100,6 +100,7 @@ def get_groq_prompt(theme):
             
             if response.status_code == 200:
                 content = response.json()['choices'][0]['message']['content']
+                if content:
                     return f"{OC_PROMPT}, {content.strip()}, {LORA_BLOCK}"
             else:
                 print(f"   -> Failed ({response.status_code}) Body: {response.text}")
@@ -133,6 +134,7 @@ def get_openrouter_prompt(theme):
             
             if response.status_code == 200:
                 content = response.json()['choices'][0]['message']['content']
+                if content:
                     return f"{OC_PROMPT}, {content.strip()}, {LORA_BLOCK}"
             else:
                 print(f"   -> Failed ({response.status_code})")
