@@ -357,7 +357,7 @@ def call_openrouter(theme):
                 
                 if not content:
                     log('warning', f"   ⚠️ Empty response from {model}")
-                    return None
+                    continue  # Try next model in list
                     
                 log('success', f"[OpenRouter] {model} responded: {content[:50]}...")
                 return content
