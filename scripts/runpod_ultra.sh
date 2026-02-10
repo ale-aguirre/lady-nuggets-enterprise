@@ -131,56 +131,94 @@ echo "   📁 Working Directory: $WORK_DIR"
 echo "   📁 SD Directory: $SD_DIR"
 
 # ==============================================================================
-# STEP 1: FIND ACTIVE SD API (validates JSON, not nginx)
+# STEP 1: FIND ACTIVE SD API
 # ==============================================================================
 echo ""
 echo -e "${BLUE}🔌 [1/7] Detecting SD API Server...${NC}"
 
 REFORGE_API=""
 NEED_SERVER_START=false
-PORTS_TO_CHECK=(7860 7861 7862 3000 8080)
+SERVER_FOUND=false
 
-# On RunPod, the Forge server may still be loading models after boot.
-# Retry up to 90 seconds before giving up.
-MAX_RETRIES=1
-if [ "$IS_RUNPOD" = true ]; then
-    MAX_RETRIES=15  # 15 retries × 6 seconds = 90 seconds max wait
-fi
+# Function: check if a port has a working SD API (returns JSON)
+check_sd_api() {
+    local port=$1
+    local response
+    response=$(curl -s --connect-timeout 3 "http://127.0.0.1:$port/sdapi/v1/sd-models" 2>/dev/null || echo "")
+    if [ -n "$response" ] && echo "$response" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+        return 0
+    fi
+    return 1
+}
 
-for attempt in $(seq 1 $MAX_RETRIES); do
-    for port in "${PORTS_TO_CHECK[@]}"; do
-        # Must return valid JSON from SD API, not nginx HTML
-        RESPONSE=$(curl -s --connect-timeout 2 "http://127.0.0.1:$port/sdapi/v1/sd-models" 2>/dev/null || echo "")
-        if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-            echo -e "   ${GREEN}✅ SD API verified on port $port${NC}"
-            REFORGE_API="http://127.0.0.1:$port"
-            break 2  # break both loops
-        elif [ -n "$RESPONSE" ] && [ $attempt -eq 1 ]; then
-            echo -e "   ${YELLOW}⚠️  Port $port responds but not SD API (still loading?)${NC}"
-        fi
-    done
-    
-    if [ $attempt -lt $MAX_RETRIES ]; then
-        if [ $attempt -eq 1 ]; then
-            echo -n "   ⏳ Waiting for Forge to finish loading"
-        fi
-        echo -n "."
-        sleep 6
+# Step 1a: Quick check all common ports
+PORTS_TO_CHECK=(7860 7861 3000 3001 8080 8188)
+for port in "${PORTS_TO_CHECK[@]}"; do
+    if check_sd_api $port; then
+        echo -e "   ${GREEN}✅ SD API found on port $port${NC}"
+        REFORGE_API="http://127.0.0.1:$port"
+        SERVER_FOUND=true
+        break
     fi
 done
 
-if [ -n "$REFORGE_API" ]; then
-    echo ""
-else
-    echo ""
+# Step 1b: If not found and on RunPod, check Forge log for port and wait
+if [ "$SERVER_FOUND" = false ] && [ "$IS_RUNPOD" = true ]; then
+    FORGE_LOG="/workspace/logs/forge.log"
+    
+    # Try to find the actual port from Forge log
+    FORGE_PORT=""
+    if [ -f "$FORGE_LOG" ]; then
+        # Forge logs "Running on local URL: http://0.0.0.0:XXXX"
+        FORGE_PORT=$(grep -oP 'Running on local URL.*?:(\d+)' "$FORGE_LOG" 2>/dev/null | grep -oP '\d+$' | tail -1 || echo "")
+        if [ -n "$FORGE_PORT" ]; then
+            echo -e "   ${CYAN}ℹ️  Forge log shows port $FORGE_PORT${NC}"
+            # Add this port to the front of our check list
+            PORTS_TO_CHECK=($FORGE_PORT "${PORTS_TO_CHECK[@]}")
+        fi
+    fi
+    
+    # Wait for Forge to finish loading models (SDXL takes 3-5 min)
+    echo -e "   ${CYAN}⏳ Waiting for Forge API to become ready (SDXL models take 3-5 min)...${NC}"
+    MAX_WAIT=300  # 5 minutes
+    WAITED=0
+    while [ $WAITED -lt $MAX_WAIT ]; do
+        for port in "${PORTS_TO_CHECK[@]}"; do
+            if check_sd_api $port; then
+                echo ""
+                echo -e "   ${GREEN}✅ SD API ready on port $port (waited ${WAITED}s)${NC}"
+                REFORGE_API="http://127.0.0.1:$port"
+                SERVER_FOUND=true
+                break 2
+            fi
+        done
+        
+        # Show progress every 15 seconds
+        if [ $((WAITED % 15)) -eq 0 ] && [ $WAITED -gt 0 ]; then
+            echo -n "   ⏳ ${WAITED}s..."
+            # Also check Forge log for progress
+            if [ -f "$FORGE_LOG" ]; then
+                LAST_LINE=$(tail -1 "$FORGE_LOG" 2>/dev/null || echo "")
+                if echo "$LAST_LINE" | grep -qi "error\|exception\|failed" 2>/dev/null; then
+                    echo " (Forge might have errors)"
+                else
+                    echo ""
+                fi
+            else
+                echo ""
+            fi
+        fi
+        
+        sleep 5
+        ((WAITED+=5))
+    done
 fi
 
-if [ -z "$REFORGE_API" ]; then
-    echo -e "   ${YELLOW}⚠️  No active SD API found. Will start server on port 7860.${NC}"
-    NEED_SERVER_START=true
-    REFORGE_API="http://127.0.0.1:7860"
-else
+if [ "$SERVER_FOUND" = true ]; then
     echo -e "   ${GREEN}✅ Using: $REFORGE_API${NC}"
+else
+    echo -e "   ${YELLOW}⚠️  No SD API found after waiting. Will try to start server.${NC}"
+    NEED_SERVER_START=true
 fi
 
 export REFORGE_API
@@ -395,88 +433,112 @@ fi
 echo ""
 echo -e "${BLUE}🚀 [6/7] Server Management...${NC}"
 
-wait_for_server() {
-    local max_wait=180
-    local waited=0
-    echo -n "   ⏳ Waiting for server"
-    while [ $waited -lt $max_wait ]; do
-        # Validate real SD API (JSON), not just HTTP response
-        RESPONSE=$(curl -s --connect-timeout 2 "http://127.0.0.1:7860/sdapi/v1/sd-models" 2>/dev/null || echo "")
-        if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-            echo ""
-            echo -e "   ${GREEN}✅ Server is UP! (API verified)${NC}"
-            return 0
+if [ "$SERVER_FOUND" = true ]; then
+    # Server was found in Step 1 — use it as-is
+    echo -e "   ${GREEN}✅ Server running at $REFORGE_API${NC}"
+    
+elif [ "$NEED_SERVER_START" = true ] && [ "$IS_RUNPOD" = true ]; then
+    echo -e "   ${YELLOW}⚠️  No SD API detected. Attempting to start server...${NC}"
+    
+    # Diagnostic: show what's listening
+    echo -e "   ${CYAN}📋 Diagnostic — active ports:${NC}"
+    ss -tlnp 2>/dev/null | grep -E ':(7860|7861|3000|3001|8080|8188) ' | head -5 || echo "      (none found on SD ports)"
+    
+    # Diagnostic: show Forge process
+    echo -e "   ${CYAN}📋 Diagnostic — Forge processes:${NC}"
+    ps aux 2>/dev/null | grep -i "forge\|webui\|launch\|gradio" | grep -v grep | head -3 || echo "      (none found)"
+    
+    # Diagnostic: show Forge log tail
+    FORGE_LOG="/workspace/logs/forge.log"
+    if [ -f "$FORGE_LOG" ]; then
+        echo -e "   ${CYAN}📋 Diagnostic — last 5 lines of forge.log:${NC}"
+        tail -5 "$FORGE_LOG" 2>/dev/null | sed 's/^/      /'
+    fi
+    
+    # Try to find launch file in the detected SD_DIR
+    LAUNCH_FILE=""
+    for candidate in "$SD_DIR/launch.py" "$SD_DIR/webui.py" "$SD_DIR/main.py"; do
+        if [ -f "$candidate" ]; then
+            LAUNCH_FILE="$candidate"
+            echo -e "   ${CYAN}ℹ️  Found launch file: $LAUNCH_FILE${NC}"
+            break
         fi
-        echo -n "."
-        sleep 3
-        ((waited+=3))
     done
-    echo ""
-    return 1
-}
-
-if [ "$NEED_SERVER_START" = true ]; then
-    # Check if server is already running (detected in Step 1)
-    if [ -n "$REFORGE_API" ]; then
-        # Server already running — DON'T kill it!
-        # Forge template runs its own server, we can't restart it with launch.py
-        echo -e "   ${YELLOW}⚠️  Extensions were installed but server is already running${NC}"
-        echo -e "   ${YELLOW}   ADetailer will be active on NEXT pod restart${NC}"
-        echo -e "   ${GREEN}✅ Using existing server at $REFORGE_API${NC}"
-    elif [ "$IS_RUNPOD" = true ]; then
-        echo -e "   ${CYAN}🔄 Starting Stable Diffusion server...${NC}"
+    
+    if [ -n "$LAUNCH_FILE" ]; then
+        echo -e "   ${CYAN}🔄 Starting SD server on port 7860...${NC}"
         
-        # Try to find the correct launch file
-        LAUNCH_FILE=""
-        for candidate in "$SD_DIR/launch.py" "$SD_DIR/webui.py" "$SD_DIR/main.py"; do
-            if [ -f "$candidate" ]; then
-                LAUNCH_FILE="$candidate"
+        # Don't kill existing Forge if it's running on another port
+        # Just start a new instance on 7860 with API enabled
+        cd "$SD_DIR"
+        sed -i 's/can_run_as_root=0/can_run_as_root=1/g' webui.sh 2>/dev/null || true
+        
+        nohup python3 "$LAUNCH_FILE" --api --listen --port 7860 --xformers --medvram-sdxl > /workspace/reforge_manual.log 2>&1 &
+        SERVER_PID=$!
+        echo -e "   ${CYAN}ℹ️  Server PID: $SERVER_PID${NC}"
+        
+        # Wait for server to become ready (up to 5 minutes)
+        echo -e "   ${CYAN}⏳ Waiting for server to load model (up to 5 min)...${NC}"
+        MAX_WAIT=300
+        WAITED=0
+        while [ $WAITED -lt $MAX_WAIT ]; do
+            if check_sd_api 7860; then
+                echo ""
+                echo -e "   ${GREEN}✅ Server is UP on port 7860! (waited ${WAITED}s)${NC}"
+                REFORGE_API="http://127.0.0.1:7860"
+                SERVER_FOUND=true
                 break
             fi
-        done
-        
-        if [ -z "$LAUNCH_FILE" ]; then
-            echo -e "   ${YELLOW}⚠️  Cannot find launch file in $SD_DIR${NC}"
-            echo -e "   ${YELLOW}   The server was running before but we can't restart it${NC}"
-            echo -e "   ${YELLOW}   Please restart the pod to apply extension changes${NC}"
-        else
-            # Kill any existing processes
-            pkill -f "launch.py" 2>/dev/null || true
-            pkill -f "webui.py" 2>/dev/null || true
-            sleep 3
             
-            cd "$SD_DIR"
-            sed -i 's/can_run_as_root=0/can_run_as_root=1/g' webui.sh 2>/dev/null || true
-            
-            REFORGE_API="http://127.0.0.1:7860"
-            export REFORGE_API
-            nohup python3 "$LAUNCH_FILE" --nowebui --api --listen --port 7860 --xformers --medvram-sdxl > /workspace/reforge.log 2>&1 &
-            
-            if ! wait_for_server; then
-                echo -e "   ${RED}❌ Server failed to start!${NC}"
-                echo "   📜 Last 20 lines of log:"
-                tail -n 20 /workspace/reforge.log
-                exit 1
+            # Check if process died
+            if ! kill -0 $SERVER_PID 2>/dev/null; then
+                echo ""
+                echo -e "   ${RED}❌ Server process died!${NC}"
+                echo -e "   ${YELLOW}📜 Last 20 lines of log:${NC}"
+                tail -20 /workspace/reforge_manual.log 2>/dev/null | sed 's/^/      /'
+                break
             fi
             
-            REFORGE_API="http://127.0.0.1:7860"
-            export REFORGE_API
-        fi
+            # Show progress
+            if [ $((WAITED % 30)) -eq 0 ] && [ $WAITED -gt 0 ]; then
+                echo -e "   ⏳ ${WAITED}s... (still loading)"
+                tail -1 /workspace/reforge_manual.log 2>/dev/null | sed 's/^/      /' || true
+            fi
+            
+            sleep 5
+            ((WAITED+=5))
+        done
     else
-        echo -e "   ${RED}❌ No server running and cannot auto-start locally.${NC}"
-        echo "      Please start your local SD server first, then run this script again."
-        exit 1
+        echo -e "   ${RED}❌ No launch file found in $SD_DIR${NC}"
+        echo -e "   ${YELLOW}   Contents of SD_DIR:${NC}"
+        ls -la "$SD_DIR"/*.py 2>/dev/null | head -5 | sed 's/^/      /' || echo "      (no python files found)"
     fi
-else
-    echo -e "   ${GREEN}✅ Server already running at $REFORGE_API${NC}"
+    
+elif [ "$NEED_SERVER_START" = true ]; then
+    echo -e "   ${RED}❌ No server running and cannot auto-start locally.${NC}"
+    echo "      Please start your local SD server first, then run this script again."
+    exit 1
 fi
 
-# Verify server responds to API
-echo -n "   🔍 Verifying API... "
-if curl -s "$REFORGE_API/sdapi/v1/options" > /dev/null 2>&1; then
-    echo -e "${GREEN}OK${NC}"
+# Final API verification
+echo ""
+if [ "$SERVER_FOUND" = true ]; then
+    echo -n "   🔍 Final API check... "
+    if check_sd_api $(echo "$REFORGE_API" | grep -oP ':\K\d+'); then
+        echo -e "${GREEN}✅ API confirmed working${NC}"
+    else
+        echo -e "${YELLOW}⚠️  API might not be fully ready${NC}"
+    fi
+    export REFORGE_API
 else
-    echo -e "${YELLOW}Warning: API may not be fully ready${NC}"
+    echo -e "   ${RED}❌ FATAL: No working SD API found.${NC}"
+    echo -e "   ${YELLOW}   Possible causes:${NC}"
+    echo -e "   ${YELLOW}   1. Forge is still loading (restart pod and wait 5 min before running script)${NC}"
+    echo -e "   ${YELLOW}   2. Forge crashed (check /workspace/logs/forge.log)${NC}"
+    echo -e "   ${YELLOW}   3. Wrong template (use 'Stable Diffusion WebUI Forge' template)${NC}"
+    echo ""
+    echo -e "   ${CYAN}💡 Try this: wait 3-5 minutes after pod starts, then run the script again${NC}"
+    exit 1
 fi
 
 # ==============================================================================
