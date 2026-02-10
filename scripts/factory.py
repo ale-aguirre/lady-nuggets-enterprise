@@ -158,14 +158,12 @@ GROQ_MODELS = [
 ]
 
 # STRICTLY FREE models on OpenRouter
-# Updated Feb 2026 - User requested specific free models
+# DeepSeek R1 FIRST - Best reasoning for complex storytelling prompts
 OPENROUTER_MODELS = [
-    "arcee-ai/trinity-large-preview:free", # User verified
-    "tngtech/deepseek-r1t2-chimera:free",  # User verified
-    "stepfun/step-3.5-flash:free",         # User verified
-    "z-ai/glm-4.5-air:free",               # User verified
-    "deepseek/deepseek-r1:free",           # Top tier reasoning
-    "deepseek/deepseek-r1-distill-llama-70b:free", 
+    "deepseek/deepseek-r1:free",           # ★ PRIORITY - Best reasoning
+    "deepseek/deepseek-r1-distill-llama-70b:free", # Backup
+    "arcee-ai/trinity-large-preview:free",
+    "tngtech/deepseek-r1t2-chimera:free", 
     "meta-llama/llama-3.3-70b-instruct:free",
     "nvidia/llama-3.1-nemotron-70b-instruct:free",
     "microsoft/phi-4:free",
@@ -173,27 +171,29 @@ OPENROUTER_MODELS = [
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
-# === PROMPT ENGINEER SYSTEM (Pinup / Ecchi Focus) ===
-PROMPT_SYSTEM = """You are an expert AI Prompt Engineer for Stable Diffusion (Civitai Style).
-Your goal is to create high-quality, Danbooru-tagged prompts for anime pinup art.
+# === PROFESSIONAL PROMPT SYSTEM (Storytelling + Cinematic) ===
+PROMPT_SYSTEM = """You are a PROFESSIONAL Stable Diffusion prompt engineer specializing in high-end Ecchi/Pinup photography.
 
-RULES:
-1. OUTPUT FORMAT: Comma-separated Danbooru tags ONLY. No sentences.
-2. STYLE: "masterpiece, best quality, ultra-detailed, 8k, absurdres" (Always start with these).
-3. SUBJECT: Focus on 1girl, solo, cute face, detailed eyes, suggestive pose.
-4. OUTFIT: Describe specific clothing textures (lace, silk, latex, wet skin).
-5. BACKGROUND: Keep it SIMPLE but elegant (white background, simple background, soft lighting, bedroom, curtains).
-6. FORBIDDEN: Do not use "fighting", "blood", "weapon", "armor", "crowd", "complex background".
+Your goal: Create LONG, CINEMATIC, STORY-DRIVEN prompts (40-60 tags) with professional photography terminology.
 
-EXAMPLES:
-Input: "Bedroom (Lingerie)"
-Output: masterpiece, best quality, 1girl, solo, sitting on bed, messy hair, white tank top, panties, blush, looking at viewer, thighs, soft lighting, bedroom, morning light, detailed skin
+MANDATORY STRUCTURE:
+1. QUALITY BASE: "masterpiece, best quality, ultra-detailed, 8k, absurdres, highly detailed"
+2. SUBJECT: "1girl, solo" + specific character details
+3. NARRATIVE SCENE: Tell a STORY (e.g., "lazy Sunday morning in bed, just woke up, stretching arms above head, messy bedroom hair")
+4. EXPRESSION: Professional terms ("sultry gaze", "seductive smile", "playful smirk", "teasing expression", "bedroom eyes")
+5. OUTFIT: Specific fabrics/details ("silk camisole", "lace trim", "sheer fabric", "see-through material")
+6. POSE: Dynamic and suggestive ("arched back", "hand on hip", "looking over shoulder", "crossed legs")
+7. LIGHTING: CRITICAL ("volumetric lighting", "rim light", "soft window light", "dramatic shadows", "backlit", "golden hour")
+8. COMPOSITION: Photography terms ("dutch angle", "shallow depth of field", "bokeh", "cinematic composition", "intimate framing")
+9. ATMOSPHERE: Mood setting ("intimate atmosphere", "sensual mood", "cozy ambiance")
 
-Input: "Feet Focus"
-Output: masterpiece, best quality, 1girl, solo, barefoot, soles, toes, sitting on chair, legs up, looking at viewer, blush, detailed feet, pedicure, white background, simple background
+EXAMPLES (LONG FORMAT):
 
-Input: "From Behind (Ass Focus)"
-Output: masterpiece, best quality, 1girl, solo, from behind, ass, panties, looking back, over shoulder, blush, suggestive, detailed skin, simple background, soft lighting"""
+Input: "Lazy Morning Bedroom"
+Output: masterpiece, best quality, ultra-detailed, 8k, absurdres, 1girl, solo, lazy Sunday morning in bed, just woke up, stretching arms above head, messy bedroom hair, sultry half-asleep expression, white silk camisole, lace trim panties, lying on white sheets, unmade bed, arched back, soft morning sunlight streaming through curtains, volumetric lighting, warm color temperature, rim light on hair, shallow depth of field, bokeh background, intimate atmosphere, cozy bedroom setting, soft shadows, detailed skin texture, bedroom eyes, playful smile, bare shoulders, thighs visible, cinematic composition, dutch angle
+
+Input: "Poolside Afternoon"
+Output: masterpiece, best quality, ultra-detailed, 8k, absurdres, 1girl, solo, relaxing by infinity pool, golden hour sunset, wet skin glistening, water droplets on body, black designer bikini, tying bikini string, looking at viewer with seductive smile, sitting on pool edge, legs in water, sultry expression, sunglasses pushed up on head, backlit by sunset, rim lighting on curves, dramatic shadows, tropical background blurred, bokeh, shallow depth of field, warm orange lighting, lens flare, intimate atmosphere, professional fashion photography, detailed skin, hip dip visible, cinematic framing"""  
 
 # LoRA disabled by default - the LadyNuggets LoRA was causing quality issues
 # To re-enable, pass --lora flag when running factory.py
@@ -383,23 +383,23 @@ def get_ai_prompt(theme):
             return result
     
     # Ultimate fallback — rich Danbooru-style prompts per theme
-    log('warning', "All AI providers failed. Using built-in prompt library.")
+    log('warning', "All AI providers failed. Using built-in PROFESSIONAL prompt library.")
     theme_prompts = {
-        "Bedroom (Lingerie)": "1girl, lingerie, sitting on bed, messy hair, stretching, tank top, panties, suggestive, blush, bedroom",
-        "Beach (Bikini)": "1girl, bikini, white sand, ocean, wet skin, lens flare, ponytail, smile, looking at viewer, beach",
-        "Onsen (Steam)": "1girl, onsen, steam, towel, wet hair, japanese bath, blushing, droplets, mystic fog, wooden bucket, naked",
-        "Simple Background (White)": "1girl, white background, studio lighting, high fashion, detailed face, looking at viewer, masterpiece, simple background",
-        "Simple Background (Black)": "1girl, black background, rim lighting, dramatic lighting, detailed face, looking at viewer, masterpiece, simple background",
-        "Feet Focus": "1girl, barefoot, soles, toes, sitting, legs up, looking at viewer, blush, detailed feet, pedicure",
-        "Chest Focus": "1girl, cleavage, large breasts, tight shirt, crop top, sweat, looking at viewer, blush, detailed skin",
-        "From Behind (Ass Focus)": "1girl, from behind, ass, panties, looking back, over shoulder, blush, suggestive, detailed skin",
-        "Dynamic Pose (Angle)": "1girl, dynamic angle, foreshortening, reaching out, jumping, floating hair, detailed anatomy, action pose",
-        "Wet Skin (Shower)": "1girl, shower, water droplets, wet skin, steam, tiled wall, looking at viewer, blush, wet hair",
-        "Sweaty (Gym)": "1girl, gym, sportswear, yoga pants, sports bra, sweat, mirror, ponytail, drinking water, fitness",
-        "Closeup (Face)": "1girl, extreme closeup, detailed eyes, detailed lips, makeup, eyelashes, looking at viewer, blush",
-        "Mirror Selfie": "1girl, holding phone, mirror selfie, bathroom, reflection, flash, cute pose, duck face",
+        "Bedroom (Lingerie)": "masterpiece, best quality, ultra-detailed, 8k, 1girl, solo, lazy Sunday morning in bed, just woke up, stretching arms above head, messy bedroom hair, sultry half-asleep expression, white silk camisole, lace trim panties, lying on white sheets, unmade bed, arched back, soft morning sunlight streaming through curtains, volumetric lighting, warm color temperature, rim light on hair, shallow depth of field, bokeh background, intimate atmosphere, cozy bedroom setting, soft shadows, detailed skin texture, bedroom eyes, playful smile, bare shoulders, thighs visible",
+        
+        "Beach (Bikini)": "masterpiece, best quality, ultra-detailed, 8k, 1girl, solo, relaxing on white sand beach, golden hour afternoon, slight ocean breeze, turquoise water background, white designer bikini with side ties, tying bikini string behind back, wet skin glistening with suntan oil, water droplets, looking at viewer with seductive smile, sitting with legs crossed, arched back, long hair flowing in wind, sultry expression, sunglasses on head, backlit by warm sunset, rim lighting on curves, lens flare, bokeh, tropical palm trees blurred in background, intimate atmosphere, fashion photography, detailed skin, hip curves visible",
+        
+        "Onsen (Steam)": "masterpiece, best quality, ultra-detailed, 8k, 1girl, solo, private outdoor onsen at dusk, rising steam creating mystical atmosphere, traditional wooden bath, wet long hair clinging to shoulders, droplets on bare skin, small white towel barely covering, sultry relaxed expression, eyes half closed, looking at viewer, sitting on stone edge, legs in hot water, soft evening light filtering through steam, volumetric fog, rim lighting through mist, warm color grading, intimate setting, japanese aesthetic, cherry blossom petals floating, wooden bucket nearby, sensual mood, detailed skin with water beads",
+        
+        "Feet Focus": "masterpiece, best quality, ultra-detailed, 8k, 1girl, solo, sitting on plush velvet chair, legs elegantly extended upward, barefoot soles facing viewer, detailed toes with red pedicure, looking back over shoulder with playful teasing smile, sultry expression, wearing short silk robe partially open, soft studio lighting, rim light on legs, shallow depth of field, feet in sharp focus, bokeh background, intimate atmosphere, professional fashion photography, detailed skin texture, arched feet, sensual pose",
+        
+        "From Behind (Ass Focus)": "masterpiece, best quality, ultra-detailed, 8k, 1girl, solo, standing in front of floor-length mirror, looking back over shoulder at viewer, seductive smile, bedroom eyes, black lace panties, bare back visible, hand on hip, arched lower back emphasizing curves, messy ponytail, soft bedroom lighting, volumetric light from window, rim light on curve of hips, warm color temperature, intimate atmosphere, morning light, detailed skin texture, tasteful composition, cinematic framing, shallow depth of field",
+        
+        "Poolside Afternoon": "masterpiece, best quality, ultra-detailed, 8k, 1girl, solo, relaxing by infinity pool, golden hour sunset, wet skin glistening, water droplets on body, black designer bikini, adjusting bikini strap, looking at viewer with seductive smile, sitting on pool edge, legs in water, sultry expression, sunglasses pushed up on head, backlit by sunset, rim lighting on curves, dramatic shadows, tropical background blurred, bokeh, shallow depth of field, warm orange lighting, lens flare, intimate atmosphere, professional fashion photography, detailed skin, hip dip visible",
+        
+        "Mirror Selfie": "masterpiece, best quality, ultra-detailed, 8k, 1girl, solo, taking mirror selfie in modern bathroom, holding phone up, looking at phone screen with playful duck face expression, wearing crop top and short shorts, leaning forward slightly, cleavage visible, one hand on hip, sultry teasing smile, camera flash creating dramatic lighting, rim light from bathroom lights, shallow depth of field, phone in focus, bokeh mirror reflection, intimate casual atmosphere, messy hair in bun, detailed skin, warm lighting, sensual pose",
     }
-    fallback = theme_prompts.get(theme, f"{theme}, detailed outfit, scenic background, dramatic lighting, dynamic pose, cinematic composition")
+    fallback = theme_prompts.get(theme, f"masterpiece, best quality, ultra-detailed, 8k, 1girl, solo, {theme}, sultry expression, seductive smile, volumetric lighting, rim light, shallow depth of field, bokeh, cinematic composition, intimate atmosphere, detailed skin, professional photography")
     return fallback
 
 def get_model_info():
