@@ -170,12 +170,12 @@ GROQ_MODELS = [
     "gemma2-9b-it"
 ]
 
-# STRICTLY FREE models on OpenRouter
-# DeepSeek R1 EXCLUSIVE - We only want the best reasoning
+# STRICTLY FREE models on OpenRouter (Updated List)
 OPENROUTER_MODELS = [
-    "tngtech/deepseek-r1t2-chimera:free",  # User requested variant
-    "arcee-ai/trinity-large-preview:free", # Reliable Backup
-    "deepseek/deepseek-r1-distill-llama-70b:free", # Reasoning Backup
+    "google/gemini-2.0-flash-lite-preview-02-05:free", # Fast, reliable
+    "deepseek/deepseek-r1:free",             # The GOAT (if available)
+    "meta-llama/llama-3.3-70b-instruct:free", # Reliable fallback
+    "microsoft/phi-3-mini-128k-instruct:free", # Backup
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
