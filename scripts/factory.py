@@ -123,27 +123,34 @@ narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair,
 
 
 # === CHARACTERS & SCENES (Pinup / Ecchi / Spicy) ===
-RANDOM_CHARACTERS = [
-    # -- SPICY PINUP SCENARIOS --
-    "1girl, lying on bed, white sheets, messy hair, looking at viewer, blush, suggestive, bedroom, morning light, (pulling own clothes:1.4), (groin:1.2), panties",
-    "1girl, pink open shirt, collared shirt, black bra, denim shorts, open fly, lace-trimmed panties, breast press, looking at viewer, blush, bedroom",
-    "1girl, onsen, steam, wet hair, blushing, looking at viewer, towel, japanese bath, naked, wet skin, droplets",
-    "1girl, beach, swimsuit, wet skin, lens flare, ocean background, tying hair, cleavage, navel, shiny skin",
-    "1girl, gym wear, sweat, ponytail, drinking water, fitness center, mirror selfie, yoga pants, cameltoe, tight clothes",
-    "1girl, selfiestick, holding phone, duck face, cleavage, crop top, navel, mirror, flash",
-    "1girl, from behind, ass focus, looking back, panties, skirt lift, suggestive, blush, detailed skin",
-    
-    # -- POPULAR WAIFUS (Pinup Verify) --
-    "furina \(genshin impact\), 1girl, solo, nightgown, bedroom, holding pillow, cute, thighs, bare legs",
-    "kafka \(honkai: star rail\), 1girl, solo, office lady, glasses, sitting on desk, crossing legs, teasing smile, black pantyhose, heels",
-    "black swan \(honkai: star rail\), 1girl, solo, purple dress, tarot cards, mystical atmosphere, simple background, cleavage",
-    "jinx \(league of legends\), 1girl, solo, underwear, messy room, graffiti, eating snacks, relaxed, tattoos, pale skin",
-    "ahri \(league of legends\), 1girl, solo, kda all out, backstage, mirror, brushing tail, cleavage, corset",
-    "yor briar \(spy x family\), 1girl, solo, sweater, casual clothes, kitchen, cooking, blushing, happy, apron",
-    "makima \(chainsaw man\), 1girl, solo, white shirt, tie, smoking, balcony, city lights, melancholic, office lady",
-    "2b \(nier:automata\), 1girl, solo, white dress (optional), field of flowers, taking off blindfold, beautiful eyes, thighs",
-    "tifa lockhart \(ff7\), 1girl, solo, barmaid uniform, wiping counter, 7th heaven, smiling, warm lighting, cleavage, suspenders",
-    "marin kitagawa \(sono bisque doll\), 1girl, solo, bikini, beach, laughing, gyaru, peace sign, cleavage, tongue out",
+# === CHARACTERS (Strictly Identities) ===
+KNOWN_CHARACTERS = [
+    "furina \(genshin impact\), 1girl, solo, blue hair, heterochromia",
+    "kafka \(honkai: star rail\), 1girl, solo, purple hair, sunglasses on head",
+    "black swan \(honkai: star rail\), 1girl, solo, purple dress, veil",
+    "jinx \(league of legends\), 1girl, solo, blue braids, tattoos, pale skin",
+    "ahri \(league of legends\), 1girl, solo, fox ears, multiple tails, whiskers",
+    "yor briar \(spy x family\), 1girl, solo, black hair, red eyes, hairband",
+    "makima \(chainsaw man\), 1girl, solo, red hair, yellow eyes, ringed eyes",
+    "2b \(nier:automata\), 1girl, solo, white hair, hair over one eye, mole",
+    "tifa lockhart \(ff7\), 1girl, solo, black hair, red eyes, earrings",
+    "marin kitagawa \(sono bisque doll\), 1girl, solo, blonde hair, pink tips",
+    "frieren \(sousou no frieren\), 1girl, solo, white hair, elf ears, twintails",
+    "lucy \(cyberpunk edgerunners\), 1girl, solo, white hair, multicolored hair, side shave",
+]
+
+# === SCENARIOS (Contexts/Outfits/Poses) ===
+PINUP_SCENARIOS = [
+    "lying on bed, white sheets, messy hair, looking at viewer, blush, suggestive, bedroom, morning light, (pulling own clothes:1.4), (groin:1.2), panties",
+    "pink open shirt, collared shirt, black bra, denim shorts, open fly, lace-trimmed panties, breast press, looking at viewer, blush, bedroom",
+    "onsen, steam, wet hair, blushing, looking at viewer, towel, japanese bath, naked, wet skin, droplets",
+    "beach, swimsuit, wet skin, lens flare, ocean background, tying hair, cleavage, navel, shiny skin",
+    "gym wear, sweat, ponytail, drinking water, fitness center, mirror selfie, yoga pants, cameltoe, tight clothes",
+    "selfiestick, holding phone, duck face, cleavage, crop top, navel, mirror, flash",
+    "from behind, ass focus, looking back, panties, skirt lift, suggestive, blush, detailed skin",
+    "office lady, pencil skirt, black pantyhose, sitting on desk, crossing legs, teasing smile",
+    "nurse uniform, pink dress, cap, stethoscope, syringe, naughty smile, hospital bed",
+    "bunny girl, bunny ears, leotard, fishnets, cuffs, bow tie, holding tray, casino background",
 ]
 
 # Flag for random character mode
@@ -772,14 +779,33 @@ def main():
         # Build full prompt with BREAK sections (proven high-quality structure)
         artist_mix = random.choice(ARTIST_MIXES)
         
-        # Character selection
+        # Character & Scenario Logic (FIXED: No more random generic girls)
         if USE_RANDOM_CHAR:
-            character = random.choice(RANDOM_CHARACTERS)
+            # Pick a known Waifu
+            character = random.choice(KNOWN_CHARACTERS)
             char_name = character.split(",")[0].strip()
-            log('info', f"Character: {char_name}")
+            # Pick a random scenario to put them in
+            random_scenario = random.choice(PINUP_SCENARIOS)
+            log('info', f"Character: {char_name} | Scenario: {random_scenario[:20]}...")
+            
+            # Combine: Identity + Scenario
+            # Note: We append the scenario to the character block
+            character_block = f"{character}, {random_scenario}"
         else:
-            character = OC_CHARACTER
-            log('info', "Character: Lady Nuggets OC")
+            # Lady Nuggets Mode
+            character_block = OC_CHARACTER
+            log('info', "Character: Lady Nuggets OC (Forced)")
+
+        # Theme Handling
+        # If user provided a specific theme (e.g. from Discord !gen arg), use it.
+        # Otherwise, the LLM will expand on the random PINUP_SCENARIO we just picked?
+        # Actually, let's simplify:
+        # If args.theme is set -> LLM expands that theme.
+        # If not -> LLM expands the random scenario we picked.
+        
+        base_theme = args.theme if args.theme else (random_scenario if USE_RANDOM_CHAR else "pinup pose")
+        scene_block = get_ai_prompt(base_theme)
+
         
         # INJECT EMBEDDINGS (lazypos/lazyneg)
         # These are Textual Inversion embeddings downloaded by runpod_ultra.sh
@@ -788,7 +814,8 @@ def main():
         
         # Added "perfect eyes" trigger word here
         section1 = f"{embedding_pos}perfect eyes, {artist_mix},\n{QUALITY_PREFIX}"
-        section2 = f"{character}, {scene_prompt}"
+        # Use the combined blocks
+        section2 = f"{character_block}, {scene_block}"
         section3 = f"{QUALITY_SUFFIX}"
         if lora_block:
             section3 += f", {lora_block}"
