@@ -158,16 +158,10 @@ GROQ_MODELS = [
 ]
 
 # STRICTLY FREE models on OpenRouter
-# DeepSeek R1 FIRST - Best reasoning for complex storytelling prompts
+# DeepSeek R1 EXCLUSIVE - We only want the best reasoning
 OPENROUTER_MODELS = [
     "deepseek/deepseek-r1:free",           # ★ PRIORITY - Best reasoning
     "deepseek/deepseek-r1-distill-llama-70b:free", # Backup
-    "arcee-ai/trinity-large-preview:free",
-    "tngtech/deepseek-r1t2-chimera:free", 
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "nvidia/llama-3.1-nemotron-70b-instruct:free",
-    "microsoft/phi-4:free",
-    "mistralai/mistral-7b-instruct:free",
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
@@ -242,31 +236,28 @@ def build_lora_block():
         'lady_nuggets': 0.6,
     }
     
+    # HARDCODED AESTHETIC LORA (Since we download it in runpod_ultra.sh)
+    # This bypasses API detection issues
+    lora_tags.append("<lora:aesthetic_quality_masterpiece:0.6>")
+    log('success', "Aesthetic LoRA: aesthetic_quality_masterpiece @ 0.6 (Forced)")
+    
     for lora in loras:
         name = lora.get('name', '')
         name_lower = name.lower()
         
-        # Always apply aesthetic LoRAs
-        matched_aesthetic = False
-        for key, weight in aesthetic_loras.items():
-            if key.lower() in name_lower:
-                lora_tags.append(f"<lora:{name}:{weight}>")
-                log('success', f"Aesthetic LoRA: {name} @ {weight}")
-                matched_aesthetic = True
-                break
-        
+        # Skip if it's the one we already hardcoded
+        if 'aesthetic_quality' in name_lower:
+            continue
+            
         # Character LoRAs only with --lora flag
-        if not matched_aesthetic and USE_LORA:
+        if USE_LORA:
             for key, weight in character_loras.items():
                 if key.lower() in name_lower:
                     lora_tags.append(f"<lora:{name}:{weight}>")
                     log('success', f"Character LoRA: {name} @ {weight}")
                     break
     
-    if not USE_LORA:
-        log('info', "Character LoRA disabled (use --lora to enable)")
-    
-    return ", ".join(lora_tags) if lora_tags else ""
+    return ", ".join(lora_tags)
 
 def call_groq(theme):
     """Call Groq API for prompt generation"""
@@ -483,7 +474,8 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
     
     # OPTIMIZED SETTINGS FOR MODEL TYPE
     # Obsession: Higher denoise, WAI: Lower denoise
-    hr_denoise = 0.55 if is_obs else (0.35 if is_wai else 0.5)
+    # User requested quality boost: using 2.0x upscale and slightly lower denoise to preserve details
+    hr_denoise = 0.45 if is_obs else (0.35 if is_wai else 0.4)
     
     # Obsession/Pinup Specific Settings (Civitai Verified)
     steps = 30 if is_obs else 28
@@ -651,8 +643,8 @@ def main():
     parser.add_argument("--count", type=int, default=1, help="Number of images to generate")
     parser.add_argument("--output", type=str, default=None, help="Output directory")
     parser.add_argument("--theme", type=str, default=None, help="Specific theme to use")
-    parser.add_argument("--lora", action="store_true", help="Enable LoRA (disabled by default)")
-    parser.add_argument("--upscale", type=float, default=1.5, help="Hires upscale factor: 1.0 (off), 1.5 (default), 2.0, 4.0")
+    parser.add_argument("--lora", action="store_true", help="Enable character LoRA")
+    parser.add_argument("--upscale", type=float, default=2.0, help="Hires upscale factor: 2.0 (default)")
     parser.add_argument("--no-hires", action="store_true", help="Disable Hires Fix entirely")
     parser.add_argument("--oc", action="store_true", help="Force use Lady Nuggets OC instead of random characters")
     parser.add_argument("--debug", action="store_true", help="Show debug information")
