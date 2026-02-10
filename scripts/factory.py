@@ -160,7 +160,6 @@ GROQ_MODELS = [
 # STRICTLY FREE models on OpenRouter
 # DeepSeek R1 EXCLUSIVE - We only want the best reasoning
 OPENROUTER_MODELS = [
-    "deepseek/deepseek-r1:free",           # ★ PRIORITY - Best reasoning
     "tngtech/deepseek-r1t2-chimera:free",  # User requested variant
     "deepseek/deepseek-r1-distill-llama-70b:free", # Backup
 ]
@@ -339,10 +338,23 @@ def call_openrouter(theme):
             
             if resp.status_code == 200:
                 content = resp.json()['choices'][0]['message']['content'].strip()
+                log('debug', f"   📝 Raw response: {content[:100]}...")  # Debug log
                 content = content.strip('"\'')
+                # If content starts with thinking process <think>, remove it
+                if '<think>' in content:
+                    content = content.split('</think>')[-1].strip()
+                
                 if '\n' in content:
-                    content = content.split('\n')[0]
-                log('success', f"[OpenRouter] {model} responded!")
+                    lines = [l.strip() for l in content.split('\n') if l.strip()]
+                    if lines:
+                        # Prefer the last line if it looks like tags, or first line if narrative
+                        content = lines[0] 
+                
+                if not content:
+                    log('warning', f"   ⚠️ Empty response from {model}")
+                    return None
+                    
+                log('success', f"[OpenRouter] {model} responded: {content[:50]}...")
                 return content
             else:
                 log('warning', f"[OpenRouter] {model} failed: {resp.status_code}")
@@ -556,6 +568,29 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
             else:
                 log('warning', "ADetailer not found")
     except Exception:
+        pass
+
+    # FreeU Integration (Quality Boost)
+    # Using conservative settings for SDXL/Pony/Illustrious
+    try:
+        available_scripts = [] # Need to fetch again if not cached, but for now assuming it might be there if integrated
+        # FreeU is usually an extension or script. In Forge it's often built-in under 'Integrated'.
+        # We can try adding it to alwayson_scripts or as a backend option.
+        # For Forge, FreeU is often an 'AlwaysOn' script named 'FreeU Integrated' or just 'FreeU'.
+        if "alwayson_scripts" not in payload:
+            payload["alwayson_scripts"] = {}
+            
+        payload["alwayson_scripts"]["FreeU Integrated"] = {
+            "args": [
+                True,  # Enabled
+                1.01,  # b1 (Backbone 1 focus) - Conservative for SDXL
+                1.02,  # b2 (Backbone 2 focus)
+                0.99,  # s1 (Skip 1 suppression)
+                0.95   # s2 (Skip 2 suppression)
+            ]
+        }
+        log('info', "FreeU: Enabled (Quality Boost)")
+    except:
         pass
 
     # SAVE JSON METADATA
