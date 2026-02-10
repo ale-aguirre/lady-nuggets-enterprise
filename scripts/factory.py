@@ -117,35 +117,36 @@ narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair,
 
 # Random anime characters for variety (used by default now)
 # === ARTIST STYLES (Randomly selected to ensure variety) ===
+# === ARTIST STYLES (Pinup / Soft / Vibrant) ===
 ARTIST_STYLES = {
     "illustrious_clean": ["(artist:quasarcake)", "(artist:cutesexyrobutts)", "(artist:ke-ta)", "(artist:ask)", "(artist:sho_(sho_lwlw))"],
     "vibrant_colorful": ["(artist:mika pikazo)", "(artist:fuzichoco)", "(artist:anmi)", "(artist:kantoku)", "(artist:dsmile)"],
     "painterly_soft": ["(artist:wlop)", "(artist:shilin)", "(artist:as109)", "(artist:atdan)", "(artist:guweiz)"],
-    "dark_edgy": ["(artist:mashu_003)", "(artist:redjuice)", "(artist:huke)", "(artist:so-bin)"]
+    # Removed Dark/Edgy to fit Pinup style
 }
 
-# === CHARACTERS & SCENES (High Quality / Dynamic) ===
-# Female Only - Monitors trends
+# === CHARACTERS & SCENES (Pinup / Ecchi / Simple Backgrounds) ===
+# Focus: Girl, Pose, Suggestive, Simple BG
 RANDOM_CHARACTERS = [
-    # -- DUOS & DYNAMIC --
-    "2girls, yuri, interacting, back-to-back, fighting stance, dynamic angle, battlefield, sword fight, sparks",
-    "2girls, hugging, yuri, beach sunset, lens flare, emotional",
-    "2girls, cyberpunk city, neon lights, motorcycle, leather jackets, cool pose",
+    # -- PINUP SCENARIOS --
+    "1girl, lying on bed, white sheets, messy hair, looking at viewer, blush, suggestive, bedroom, morning light",
+    "1girl, onsen, steam, wet hair, blushing, looking at viewer, towel, japanese bath",
+    "1girl, beach, swimsuit, wet skin, lens flare, ocean background, tying hair",
+    "1girl, simple background, white background, studio lighting, high fashion pose, detailed face",
+    "1girl, gym wear, sweat, ponytail, drinking water, fitness center, mirror selfie",
     
-    # -- POPULAR WAIFUS --
-    "furina \(genshin impact\), 1girl, solo, top hat, blue dress, hydro archon, ornate stage",
-    "kafka \(honkai: star rail\), 1girl, solo, spider motifs, sunglasses, confident smirk, holding gun",
-    "black swan \(honkai: star rail\), 1girl, solo, purple veil, tarot cards, mystical atmosphere",
-    "acheron \(honkai: star rail\), 1girl, solo, red lightning, katana, rain, dark atmosphere",
-    "jinx \(league of legends\), 1girl, solo, blue braids, chaotic energy, graffiti background, holding rocket launcher",
-    "kai'sa \(league of legends\), 1girl, solo, void skin, purple energy, floating",
-    "evelynn \(league of legends\), 1girl, solo, shadow form, glowing eyes, claws",
-    "yor briar \(spy x family\), 1girl, solo, assassin dress, blood on face, cold expression, daggers",
-    "makima \(chainsaw man\), 1girl, solo, business suit, yellow eyes, controlling gaze",
-    "2b \(nier:automata\), 1girl, solo, blindfold, sword on back, ruined city background",
-    "tifa lockhart \(ff7\), 1girl, solo, fighting pose, limit break, blue aura",
-    "aerith gainsborough \(ff7\), 1girl, solo, praying, flower field, lifestream particles",
-    "lucy \(cyberpunk edgerunners\), 1girl, solo, white hair, neon wires, hacking interface",
+    # -- POPULAR WAIFUS (Pinup Verify) --
+    "furina \(genshin impact\), 1girl, solo, nightgown, bedroom, holding pillow, cute",
+    "kafka \(honkai: star rail\), 1girl, solo, office lady, glasses, sitting on desk, crossing legs, teasing smile",
+    "black swan \(honkai: star rail\), 1girl, solo, purple dress, tarot cards, mystical atmosphere, simple background",
+    "jinx \(league of legends\), 1girl, solo, underwear, messy room, graffiti, eating snacks, relaxed",
+    "ahri \(league of legends\), 1girl, solo, kda all out, backstage, mirror, brushing tail",
+    "yor briar \(spy x family\), 1girl, solo, sweater, casual clothes, kitchen, cooking, blushing, happy",
+    "makima \(chainsaw man\), 1girl, solo, white shirt, tie, smoking, balcony, city lights, melancholic",
+    "2b \(nier:automata\), 1girl, solo, white dress (optional), field of flowers, taking off blindfold, beautiful eyes",
+    "tifa lockhart \(ff7\), 1girl, solo, barmaid uniform, wiping counter, 7th heaven, smiling, warm lighting",
+    "marin kitagawa \(sono bisque doll\), 1girl, solo, bikini, beach, laughing, gyaru, peace sign",
+    "lucy \(cyberpunk edgerunners\), 1girl, solo, oversized t-shirt, sitting on roof, moon, smoking",
 ]
 
 # Flag for random character mode
@@ -183,21 +184,27 @@ OPENROUTER_MODELS = [
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
-PROMPT_SYSTEM = """You are an expert Anime Art Director for Illustrious XL models.
-Create a FOCUSED scene prompt. Quality and visual beauty are critical.
+# === PROMPT ENGINEER SYSTEM (Pinup / Ecchi Focus) ===
+PROMPT_SYSTEM = """You are an expert AI Prompt Engineer for Stable Diffusion (Civitai Style).
+Your goal is to create high-quality, Danbooru-tagged prompts for anime pinup art.
 
 RULES:
-1. OUTPUT ONLY comma-separated Danbooru tags, NO explanations
-2. Keep it SIMPLE and FOCUSED: 5-8 scene tags MAXIMUM
-3. Include: specific outfit (use Danbooru tags), location, ONE lighting style, ONE pose
-4. DO NOT add quality tags, artist names, or character descriptions (those are added automatically)
-5. Outfit MUST match theme
-6. Use precise Danbooru tags (e.g., "serafuku" not "school uniform", "maid_headdress" not "maid hat")
+1. OUTPUT FORMAT: Comma-separated Danbooru tags ONLY. No sentences.
+2. STYLE: "masterpiece, best quality, ultra-detailed, 8k, absurdres" (Always start with these).
+3. SUBJECT: Focus on 1girl, solo, cute face, detailed eyes, suggestive pose.
+4. OUTFIT: Describe specific clothing textures (lace, silk, latex, wet skin).
+5. BACKGROUND: Keep it SIMPLE but elegant (white background, simple background, soft lighting, bedroom, curtains).
+6. FORBIDDEN: Do not use "fighting", "blood", "weapon", "armor", "crowd", "complex background".
 
 EXAMPLES:
-Theme: "Witch Academy" → black witch hat, gothic lolita dress, holding magic staff, mystical library, candlelight, mysterious smile
-Theme: "Beach Day" → white bikini, sarong, sandy beach, ocean waves, sunset, playful pose, hair blowing
-Theme: "Office" → pencil skirt, white blouse, sitting on desk, office background, warm lighting, crossed legs"""
+Input: "Bedroom"
+Output: masterpiece, best quality, 1girl, solo, sitting on bed, messy hair, white tank top, panties, blush, looking at viewer, thighs, soft lighting, bedroom, morning light, detailed skin, cute
+
+Input: "Beach"
+Output: masterpiece, best quality, 1girl, solo, white bikini, wet skin, cleavage, smile, ponytail, beach, ocean, simple background, lens flare, shiny skin, navel
+
+Input: "Office"
+Output: masterpiece, best quality, 1girl, solo, office lady, pencil skirt, black pantyhose, unbuttoned shirt, glasses, sitting on desk, crossing legs, heels, office interior, depth of field"""
 
 # LoRA disabled by default - the LadyNuggets LoRA was causing quality issues
 # To re-enable, pass --lora flag when running factory.py
@@ -389,54 +396,47 @@ def get_ai_prompt(theme):
     # Ultimate fallback — rich Danbooru-style prompts per theme
     log('warning', "All AI providers failed. Using built-in prompt library.")
     theme_prompts = {
-        "Victorian Ball": "ballgown, white gloves, elbow gloves, chandelier, ballroom, dancing, candlelight, ornate architecture, gold trim, flowing dress, elegant",
-        "Cyberpunk Night": "cyberpunk, neon lights, rain, wet streets, holographic, tech wear, crop top, shorts, neon hair, city skyline, night, reflections",
-        "Beach Sunset": "beach, sunset, ocean, bikini, sarong, wind, golden hour, waves, palm trees, sand, standing in water, wet skin",
-        "Gothic Cathedral": "gothic architecture, stained glass, dark dress, cathedral, candles, dramatic shadows, long dress, cross necklace, solemn expression",
-        "Cherry Blossom": "cherry blossoms, petals falling, kimono, japanese garden, bridge, spring, pink flowers, wind, serene, traditional",
-        "School Uniform": "serafuku, sailor collar, classroom, window light, school desk, pleated skirt, sitting, looking at viewer, afternoon sun",
-        "Maid Cafe": "maid dress, maid headdress, frills, apron, cafe interior, tray, serving, smile, cute pose, heart hands",
-        "Fitness Gym": "sports bra, bike shorts, gym, dumbbells, sweat, ponytail, toned body, mirror, determined expression, athletic",
-        "Library Study": "glasses, sweater, bookshelf, reading, warm lighting, cozy, sitting, books, concentrated, library interior",
-        "Rain Walk": "umbrella, rain, wet hair, puddles, city street, transparent umbrella, coat, boots, reflection, moody lighting",
-        "Witch Forest": "witch hat, magic circle, glowing, dark forest, cape, staff, moonlight, mystical, floating particles, spell casting",
-        "Space Station": "spacesuit, holographic display, zero gravity, stars, space station interior, futuristic, floating hair, visor",
-        "Festival Night": "yukata, festival, paper lanterns, fireworks, night sky, goldfish scooping, crowd, warm lights, summer festival",
-        "Royal Throne": "crown, throne room, royal dress, scepter, red carpet, gold decoration, regal pose, cape, jewels, commanding",
-        "Underwater": "underwater, bubbles, flowing hair, mermaid tail, coral reef, sunlight rays, fish, ocean blue, serene, floating",
-        "Concert Stage": "idol, stage lights, microphone, concert, crowd, spotlight, glowing, singing, energy, colorful lights",
-        "Desert Oasis": "desert, oasis, belly dancer outfit, gold jewelry, palm trees, sunset, sand dunes, flowing fabric, exotic",
-        "Snow Mountain": "winter coat, fur trim, snow, mountain peak, aurora borealis, breath visible, mittens, scarf, cold, beautiful sky",
-        "Steampunk Workshop": "steampunk, goggles, gears, workshop, brass, mechanical, corset, inventor, tools, warm industrial lighting",
-        "Garden Tea Party": "tea party, garden, floral dress, hat, teacup, parasol, roses, afternoon, elegant, table setting",
+        "Bedroom": "bedroom, white sheets, morning light, messy hair, stretching, tank top, panties, suggestive, blush",
+        "Beach": "beach, ocean, white sand, bikini, wet skin, lens flare, ponytail, smile, looking at viewer",
+        "Onsen": "onsen, steam, towel, wet hair, japanese bath, blushing, droplets, mystic fog, wooden bucket",
+        "Gym": "gym, sportswear, yoga pants, sports bra, sweat, mirror, ponytail, drinking water, fitness",
+        "Office": "office, pencil skirt, white blouse, unbuttoned, glasses, sitting on desk, black pantyhose, heels",
+        "Simple Background": "white background, studio lighting, high fashion, detailed face, looking at viewer, masterpiece",
+        "Poolside": "swimming pool, wet, lounge chair, sunglasses, cocktail, blue water, summer vibe",
+        "Lingerie": "lingerie, lace, silk, boudoir, dim lighting, seductive pose, bed, pillows",
     }
     fallback = theme_prompts.get(theme, f"{theme}, detailed outfit, scenic background, dramatic lighting, dynamic pose, cinematic composition")
     return fallback
 
 def get_model_info():
-    """Get current model info from server. Prioritizes WAI > OneObsession > anime."""
+    """Get current model info from server. Prioritizes OneObsession > WAI."""
     try:
         resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models", timeout=5)
         if resp.status_code == 200:
             models = resp.json()
-            # Priority 1: WAI-Illustrious (best anime quality)
+            
+            # Priority 1: OneObsession (User Request: Pinup/Ecchi)
+            for m in models:
+                if 'oneobsession' in m['title'].lower() or 'obsession' in m['title'].lower():
+                    return m['title']
+            
+            # Priority 2: WAI-Illustrious (Fallback High Quality)
             for m in models:
                 if 'wai' in m['title'].lower() and 'illustrious' in m['title'].lower():
                     return m['title']
                 if 'waiillustrious' in m['title'].lower():
                     return m['title']
-            # Priority 2: OneObsession (good 2.5D)
-            for m in models:
-                if 'oneobsession' in m['title'].lower() or 'obsession' in m['title'].lower():
-                    return m['title']
+            
             # Priority 3: Any Illustrious-based
             for m in models:
                 if 'illustrious' in m['title'].lower():
                     return m['title']
+            
             # Priority 4: Any anime-ish model
             for m in models:
                 if any(x in m['title'].lower() for x in ['anime', 'manga', 'noob']):
                     return m['title']
+            
             # Last resort: first model
             return models[0]['title'] if models else None
     except:
@@ -482,21 +482,27 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
     
     # Detect model type
     is_wai = 'wai' in model_name.lower()
+    is_obs = 'obsession' in model_name.lower()
     
-    # OPTIMIZED SETTINGS FOR QUALITY
-    # WAI needs lower denoise to not distort anatomy
-    hr_denoise = 0.35 if is_wai else 0.55
+    # OPTIMIZED SETTINGS FOR MODEL TYPE
+    # Obsession: Higher denoise, WAI: Lower denoise
+    hr_denoise = 0.55 if is_obs else (0.35 if is_wai else 0.5)
+    
+    # Obsession/Pinup Specific Settings (Civitai Verified)
+    steps = 30 if is_obs else 28
+    cfg = 6.0 if is_obs else 5.0
+    sampler = "DPM++ 2M Karras" if is_obs else "Euler a"
     
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
         
         # High Quality Settings
-        "steps": 28,  # Increased from 20 for better detail
-        "cfg_scale": 5,
+        "steps": steps,
+        "cfg_scale": cfg,
         "width": 832,
         "height": 1216,
-        "sampler_name": "Euler a",
+        "sampler_name": sampler,
         "scheduler": "Karras",
         "batch_size": 1,
         
@@ -515,7 +521,7 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
             "hr_upscaler": "R-ESRGAN 4x+ Anime6B",
             "denoising_strength": hr_denoise,
             "hr_second_pass_steps": 15,
-            "hr_cfg_scale": 5,
+            "hr_cfg_scale": cfg,
         })
         final_w = int(832 * upscale_factor)
         final_h = int(1216 * upscale_factor)
@@ -636,14 +642,9 @@ def save_image(data, prompt, output_dir):
     return saved
 
 def load_themes():
-    """Load themes from file"""
-    try:
-        with open(THEMES_FILE, "r") as f:
-            themes = [line.strip() for line in f if line.strip() and not line.startswith('#')]
-        return themes
-    except FileNotFoundError:
-        log('warning', f"Themes file not found: {THEMES_FILE}")
-        return ["Fantasy Princess", "Cyber Punk", "Beach Day", "Gothic Lolita"]
+    """Load themes. User requested to OMIT complex external themes."""
+    # Return Hardcoded Pinup Themes by default
+    return ["Bedroom", "Beach", "Onsen", "Gym", "Office", "Simple Background", "Poolside", "Lingerie"]
 
 def main():
     parser = argparse.ArgumentParser(description="Lady Nuggets Factory V10")
