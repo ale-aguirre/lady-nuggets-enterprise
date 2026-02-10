@@ -90,10 +90,10 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
 # === LADY NUGGETS CHARACTER DEFINITION ===
-# Quality prefix: User's Golden Formula (from Civitai proven prompts)
+# Quality prefix: Concise, high-impact tags only (Preferred by WAI)
 import random
-QUALITY_PREFIX = """masterpiece,best quality,amazing quality,very aesthetic,absurdres,newest,highres,
-ultra-detailed,sharp focus,ray tracing,best lighting,detailed illustration,beautiful face,beautiful eyes"""
+QUALITY_PREFIX = """masterpiece,best quality,amazing quality,very aesthetic,absurdres,newest,highres"""
+
 
 # Artist mixes: User's exact golden mixes from their best generations
 ARTIST_MIXES = [
@@ -142,15 +142,15 @@ KNOWN_CHARACTERS = [
 # === SCENARIOS (Contexts/Outfits/Poses) ===
 PINUP_SCENARIOS = [
     "lying on bed, white sheets, messy hair, looking at viewer, blush, suggestive, bedroom, morning light, (pulling own clothes:1.4), (groin:1.2), panties",
-    "pink open shirt, collared shirt, black bra, denim shorts, open fly, lace-trimmed panties, breast press, looking at viewer, blush, bedroom",
-    "onsen, steam, wet hair, blushing, looking at viewer, towel, japanese bath, naked, wet skin, droplets",
-    "beach, swimsuit, wet skin, lens flare, ocean background, tying hair, cleavage, navel, shiny skin",
-    "gym wear, sweat, ponytail, drinking water, fitness center, mirror selfie, yoga pants, cameltoe, tight clothes",
-    "selfiestick, holding phone, duck face, cleavage, crop top, navel, mirror, flash",
-    "from behind, ass focus, looking back, panties, skirt lift, suggestive, blush, detailed skin",
-    "office lady, pencil skirt, black pantyhose, sitting on desk, crossing legs, teasing smile",
-    "nurse uniform, pink dress, cap, stethoscope, syringe, naughty smile, hospital bed",
-    "bunny girl, bunny ears, leotard, fishnets, cuffs, bow tie, holding tray, casino background",
+    "shibari rope bondage, artistic, suspended, kinbaku, aesthetic, tasteful, dramatic lighting, blush, submission",
+    "onsen, steam, wet hair, blushing, looking at viewer, towel, japanese bath, naked, wet skin, droplets, night",
+    "beach, micro bikini, wet skin, lens flare, ocean background, tying hair, cleavage, navel, shiny skin, golden hour",
+    "latex bodysuit, shiny, futuristic, cyber aesthetic, neon lights, crouching, dynamic pose, looking back",
+    "succubus, wings, horns, tail, gothic lingerie, dark room, glowing eyes, magic circle, floating",
+    "maid outfit, french maid, bending over, adjusting garter, blushing, bedroom, pov, messy room",
+    "gym wear, sweat, sports bra, yoga pants, stretching, mirror selfie, fitness center, cameltoe, tight clothes",
+    "bunny girl, bunny ears, shiny leotard, fishnets, cuffs, bow tie, holding tray, casino background, high heels",
+    "broken clothes, battle damage, torn fabric, dirt, sweat, intense expression, dynamic action pose, fantasy ruin",
 ]
 
 # Flag for random character mode
@@ -506,15 +506,32 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
     is_obs = 'obsession' in model_name.lower()
     
     # OPTIMIZED SETTINGS FOR MODEL TYPE
-    # Obsession: Higher denoise, WAI: Lower denoise
-    # User requested quality boost: using 2.0x upscale and slightly lower denoise to preserve details
-    hr_denoise = 0.45 if is_obs else (0.35 if is_wai else 0.4)
+    # WAI v16 Recommends: Steps 15-30, CFG 5-7, Euler a, Hires Denoise 0.35-0.5
+    # User requested: CFG 4.5, Denoise 0.35
     
-    # Obsession/Pinup Specific Settings (Civitai Verified)
-    steps = 30 if is_obs else 28
-    cfg = 6.0 if is_obs else 5.0
-    sampler = "DPM++ 2M Karras" if is_obs else "Euler a"
-    
+    if is_wai:
+        steps = 28
+        cfg = 5.0  # Safe middle ground (User asked for 4.5, Docs say 5-7)
+        sampler = "Euler a"
+        hr_denoise = 0.35
+        hr_steps = 20
+        log('info', "Config: WAI-Illustrious Mode (CFG 5.0, Denoise 0.35)")
+        
+    elif is_obs: # OneObsession
+        steps = 30
+        cfg = 6.0 
+        sampler = "DPM++ 2M Karras"
+        hr_denoise = 0.45
+        hr_steps = 15
+        log('info', "Config: OneObsession Mode (CFG 6.0, Denoise 0.45)")
+        
+    else: # Fallback
+        steps = 28
+        cfg = 5.5
+        sampler = "Euler a"
+        hr_denoise = 0.4
+        hr_steps = 15
+
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
@@ -542,12 +559,12 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
             "hr_scale": upscale_factor,
             "hr_upscaler": "R-ESRGAN 4x+ Anime6B",
             "denoising_strength": hr_denoise,
-            "hr_second_pass_steps": 15,
+            "hr_second_pass_steps": hr_steps,
             "hr_cfg_scale": cfg,
         })
         final_w = int(832 * upscale_factor)
         final_h = int(1216 * upscale_factor)
-        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h} (denoise {hr_denoise})")
+        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h} (denoise {hr_denoise}, steps {hr_steps})")
     else:
         payload["enable_hr"] = False
         log('info', "Hires Fix: DISABLED (base 832x1216)")
