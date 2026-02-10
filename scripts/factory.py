@@ -344,6 +344,12 @@ def call_openrouter(theme):
                 return content
             else:
                 log('warning', f"[OpenRouter] {model} failed: {resp.status_code}")
+                if resp.status_code == 401:
+                    try:
+                        err_msg = resp.json().get('error', {}).get('message', resp.text)
+                        log('warning', f"   ❌ Error details: {err_msg}")
+                    except:
+                        log('warning', f"   ❌ Response body: {resp.text[:200]}")
                 
         except Exception as e:
             log('warning', f"[OpenRouter] {model} error: {str(e)[:50]}")
