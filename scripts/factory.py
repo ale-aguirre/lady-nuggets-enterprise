@@ -104,7 +104,7 @@ ARTIST_MIXES = [
 ]
 
 # Quality suffix: User's proven high-impact tags (lazypos, impasto, foreshortening)
-QUALITY_SUFFIX = """lazypos,lazyup,high detail,subtle,high contrast,colorful depth,
+QUALITY_SUFFIX = """high detail,subtle,high contrast,colorful depth,
 chiaroscuro,impasto,(shallow depth of field:1.4),(foreshortening:1.4),
 depth of field,cinematic lighting,ambient occlusion,soft lighting"""
 
