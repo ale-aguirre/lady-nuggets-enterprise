@@ -615,8 +615,11 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
                 json.dump(metadata, f, indent=2)
                 
             log('success', f"Saved: {filename} + .json")
+        
+        return len(data['images'])
     else:
         log('error', f"Generation failed: {resp.text}")
+        return 0
 
 def save_image(data, prompt, output_dir):
     """Save generated image and metadata"""
@@ -757,10 +760,9 @@ def main():
         result = generate_image(full_prompt, NEGATIVE_PROMPT, model_name, 
                                upscale_factor=args.upscale, no_hires=args.no_hires)
         
-        # Save
+        # Save check
         if result:
-            saved = save_image(result, full_prompt, output_dir)
-            total_saved += saved
+            total_saved += result
         
         # Small delay between generations
         if i < args.count - 1:
