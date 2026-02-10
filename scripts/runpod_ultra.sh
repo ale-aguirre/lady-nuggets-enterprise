@@ -29,6 +29,7 @@ SKIP_MODEL_DOWNLOAD=false
 VERBOSE=false
 
 # === PARSE ARGUMENTS ===
+FACTORY_EXTRA_ARGS=""
 while [[ $# -gt 0 ]]; do
     case $1 in
         --count|-c)
@@ -39,6 +40,22 @@ while [[ $# -gt 0 ]]; do
             SKIP_MODEL_DOWNLOAD=true
             shift
             ;;
+        --random-char)
+            FACTORY_EXTRA_ARGS="$FACTORY_EXTRA_ARGS --random-char"
+            shift
+            ;;
+        --lora)
+            FACTORY_EXTRA_ARGS="$FACTORY_EXTRA_ARGS --lora"
+            shift
+            ;;
+        --no-hires)
+            FACTORY_EXTRA_ARGS="$FACTORY_EXTRA_ARGS --no-hires"
+            shift
+            ;;
+        --theme)
+            FACTORY_EXTRA_ARGS="$FACTORY_EXTRA_ARGS --theme \"$2\""
+            shift 2
+            ;;
         --verbose|-v)
             VERBOSE=true
             shift
@@ -48,6 +65,10 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Options:"
             echo "  --count, -c NUMBER    Number of images to generate (default: 2)"
+            echo "  --random-char         Use random anime characters (not just Lady Nuggets)"
+            echo "  --lora                Enable character LoRA"
+            echo "  --theme TEXT          Use a specific theme"
+            echo "  --no-hires            Disable Hires Fix (faster, lower quality)"
             echo "  --no-model            Skip model download check"
             echo "  --verbose, -v         Show detailed output"
             echo "  --help, -h            Show this help message"
@@ -213,9 +234,11 @@ else
         echo -e "   ${GREEN}✅ WAI-Illustrious v16: ${FILE_SIZE_MB}MB${NC}"
     else
         if [ -n "$CIVITAI_TOKEN" ]; then
-            echo -e "   ${CYAN}⬇️  Downloading WAI-Illustrious v16 (~7GB, best anime checkpoint)...${NC}"
+            echo -e "   ${CYAN}⬇️  Downloading WAI-Illustrious v16 (~6.5GB, best anime checkpoint)...${NC}"
+            # CivitAI: modelId=827184 is WAI-NSFW-illustrious-SDXL
+            # Use direct model page download with token
             curl -L -o "$WAI_PATH" \
-                "https://civitai.com/api/download/models/827184?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null
+                "https://civitai.com/api/download/models/827184?type=Model&format=SafeTensor&size=pruned&fp=fp16&token=${CIVITAI_TOKEN}" 2>/dev/null || true
             FILE_SIZE=$(stat -c%s "$WAI_PATH" 2>/dev/null || stat -f%z "$WAI_PATH" 2>/dev/null || echo "0")
             if [ "$FILE_SIZE" -gt 1000000000 ]; then
                 echo -e "   ${GREEN}✅ WAI-Illustrious downloaded!${NC}"
@@ -265,12 +288,12 @@ if [ -d "$ADETAILER_DIR" ]; then
 else
     echo -e "   ${CYAN}⬇️  Installing ADetailer (face + hand fix)...${NC}"
     
-    # Method 1: git clone (Anapnoe fork)
-    GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git "$ADETAILER_DIR" 2>/dev/null
+    # Method 1: git clone (Anapnoe fork) — || true prevents set -e crash
+    GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git "$ADETAILER_DIR" 2>/dev/null || true
     
     if [ ! -d "$ADETAILER_DIR" ]; then
         # Method 2: Original repo
-        GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Bing-su/adetailer.git "$ADETAILER_DIR" 2>/dev/null
+        GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Bing-su/adetailer.git "$ADETAILER_DIR" 2>/dev/null || true
     fi
     
     if [ ! -d "$ADETAILER_DIR" ]; then
@@ -418,8 +441,8 @@ echo "      - Output directory: $BATCH_DIR"
 echo "      - API endpoint: $REFORGE_API"
 echo ""
 
-# Run factory
-python3 scripts/factory.py --count "$IMAGE_COUNT" --output "$BATCH_DIR"
+# Run factory with all flags
+eval python3 scripts/factory.py --count "$IMAGE_COUNT" --output "$BATCH_DIR" $FACTORY_EXTRA_ARGS
 GEN_EXIT_CODE=$?
 
 if [ $GEN_EXIT_CODE -ne 0 ]; then

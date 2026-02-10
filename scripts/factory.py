@@ -114,6 +114,28 @@ OC_CHARACTER = """1girl, solo, full body, centered composition, looking at viewe
 narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, 
 (thick black cat tail, long tail, black cat ears)"""
 
+# Random anime characters for variety (used with --random-char)
+RANDOM_CHARACTERS = [
+    "makima \\(chainsaw man\\), 1girl, solo, red hair, ringed eyes, yellow eyes, braided ponytail, business suit",
+    "yor briar \\(spy x family\\), 1girl, solo, black hair, long hair, red eyes, earrings, thorn princess",
+    "power \\(chainsaw man\\), 1girl, solo, long hair, blonde hair, red horns, yellow eyes, sharp teeth, fiend",
+    "nico robin \\(one piece\\), 1girl, solo, black hair, long hair, blue eyes, mature female, cowboy hat",
+    "zero two \\(darling in the franxx\\), 1girl, solo, long hair, pink hair, green eyes, red horns, pilot suit",
+    "rem \\(re:zero\\), 1girl, solo, blue hair, short hair, blue eyes, hair ornament, maid",
+    "hinata hyuuga \\(naruto\\), 1girl, solo, long hair, dark blue hair, white eyes, byakugan, shy",
+    "asuna \\(sao\\), 1girl, solo, long hair, orange hair, brown eyes, knights of blood uniform",
+    "marin kitagawa \\(sono bisque doll\\), 1girl, solo, blonde hair, long hair, blue eyes, gyaru, earrings",
+    "frieren \\(sousou no frieren\\), 1girl, solo, long hair, white hair, green eyes, elf, pointy ears, staff",
+    "esdeath \\(akame ga kill!\\), 1girl, solo, long hair, blue hair, blue eyes, general, military uniform, hat",
+    "2b \\(nier:automata\\), 1girl, solo, white hair, short hair, blindfold, black dress, thigh boots",
+    "raiden shogun \\(genshin impact\\), 1girl, solo, purple hair, long braided hair, purple eyes, electro archon",
+    "sailor moon \\(tsukino usagi\\), 1girl, solo, blonde hair, twintails, blue eyes, sailor uniform, tiara, magical girl",
+    "hatsune miku \\(vocaloid\\), 1girl, solo, aqua hair, very long twintails, aqua eyes, headset, futuristic",
+]
+
+# Flag for random character mode
+USE_RANDOM_CHAR = False
+
 # === NEGATIVE PROMPT (from proven working prompts) ===
 NEGATIVE_PROMPT = """anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent,
 low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored,
@@ -574,12 +596,14 @@ def main():
     parser.add_argument("--lora", action="store_true", help="Enable LoRA (disabled by default)")
     parser.add_argument("--upscale", type=float, default=1.5, help="Hires upscale factor: 1.0 (off), 1.5 (default), 2.0, 4.0")
     parser.add_argument("--no-hires", action="store_true", help="Disable Hires Fix entirely")
+    parser.add_argument("--random-char", action="store_true", help="Use random anime characters instead of Lady Nuggets OC")
     parser.add_argument("--debug", action="store_true", help="Show debug information")
     args = parser.parse_args()
     
     # Apply flags
-    global USE_LORA
+    global USE_LORA, USE_RANDOM_CHAR
     USE_LORA = args.lora
+    USE_RANDOM_CHAR = args.random_char
     
     # Setup output directory
     output_dir = args.output if args.output else OUTPUT_DIR
@@ -633,13 +657,19 @@ def main():
         scene_prompt = get_ai_prompt(theme)
         
         # Build full prompt with BREAK sections (proven high-quality structure)
-        # Section 1: Artists + Quality prefix
-        # Section 2: Character + Scene  
-        # Section 3: Quality suffix + LoRAs
         artist_mix = random.choice(ARTIST_MIXES)
         
+        # Character selection
+        if USE_RANDOM_CHAR:
+            character = random.choice(RANDOM_CHARACTERS)
+            char_name = character.split(",")[0].strip()
+            log('info', f"Character: {char_name}")
+        else:
+            character = OC_CHARACTER
+            log('info', "Character: Lady Nuggets OC")
+        
         section1 = f"{artist_mix},\n{QUALITY_PREFIX}"
-        section2 = f"{OC_CHARACTER}, {scene_prompt}"
+        section2 = f"{character}, {scene_prompt}"
         section3 = f"{QUALITY_SUFFIX}"
         if lora_block:
             section3 += f", {lora_block}"
