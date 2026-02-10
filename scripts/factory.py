@@ -83,8 +83,9 @@ def detect_sd_api():
     return "http://127.0.0.1:7860"
 
 REFORGE_API = detect_sd_api()
-OPENROUTER_KEY = os.getenv("OPENROUTER_KEY")
-GROQ_KEY = os.getenv("GROQ_KEY")
+# Clean keys to prevent 401 errors from invisible whitespace/quotes
+OPENROUTER_KEY = os.getenv("OPENROUTER_KEY", "").strip().replace('"', '').replace("'", "")
+GROQ_KEY = os.getenv("GROQ_KEY", "").strip().replace('"', '').replace("'", "")
 OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
@@ -114,7 +115,7 @@ OC_CHARACTER = """1girl, solo, full body, centered composition, looking at viewe
 narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, 
 (thick black cat tail, long tail, black cat ears)"""
 
-# Random anime characters for variety (used with --random-char)
+# Random anime characters for variety (used by default now)
 RANDOM_CHARACTERS = [
     "makima \\(chainsaw man\\), 1girl, solo, red hair, ringed eyes, yellow eyes, braided ponytail, business suit",
     "yor briar \\(spy x family\\), 1girl, solo, black hair, long hair, red eyes, earrings, thorn princess",
@@ -131,10 +132,18 @@ RANDOM_CHARACTERS = [
     "raiden shogun \\(genshin impact\\), 1girl, solo, purple hair, long braided hair, purple eyes, electro archon",
     "sailor moon \\(tsukino usagi\\), 1girl, solo, blonde hair, twintails, blue eyes, sailor uniform, tiara, magical girl",
     "hatsune miku \\(vocaloid\\), 1girl, solo, aqua hair, very long twintails, aqua eyes, headset, futuristic",
+    "son goku \\(dragon ball\\), 1boy, solo, spiky hair, black hair, orange gi, muscular, fighting stance",
+    "uzumaki naruto \\(naruto\\), 1boy, solo, blonde hair, spiky hair, blue eyes, whiskers, headband, orange jumpsuit",
+    "monkey d. luffy \\(one piece\\), 1boy, solo, black hair, short hair, scar on cheek, straw hat, red vest, smiling",
+    "gojo satoru \\(jujutsu kaisen\\), 1boy, solo, white hair, blindfold, tall, sorcerer uniform, carefree",
+    "tanjiro kamado \\(kimetsu no yaiba\\), 1boy, solo, burgundy hair, scar on forehead, hanafuda earrings, checkerboard haori, katana",
+    "misato katsuragi \\(evangelion\\), 1girl, solo, purple hair, long hair, red jacket, black dress, cross necklace, beer can",
+    "tifa lockhart \\(ff7\\), 1girl, solo, black hair, long hair, red eyes, white tank top, suspenders, black skirt, gloves",
+    "aerith gainsborough \\(ff7\\), 1girl, solo, brown hair, long braid, green eyes, pink dress, red jacket, flowers",
 ]
 
-# Flag for random character mode
-USE_RANDOM_CHAR = False
+# Flag for random character mode (Enabled by default for variety)
+USE_RANDOM_CHAR = True
 
 # === NEGATIVE PROMPT (from proven working prompts) ===
 NEGATIVE_PROMPT = """anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent,
@@ -153,14 +162,14 @@ GROQ_MODELS = [
     "gemma2-9b-it"
 ]
 
-# Paid models first (user has OpenRouter credit), then free fallbacks
+# Powerful free models on OpenRouter (DeepSeek R1, Llama 3.3, Gemini 2.0 Flash)
 OPENROUTER_MODELS = [
-    "google/gemini-2.0-flash-001",
-    "meta-llama/llama-3.3-70b-instruct",
-    "anthropic/claude-3.5-haiku",
-    "mistralai/mistral-small-3.1-24b-instruct",
-    "meta-llama/llama-3.3-70b-instruct:free",
+    "deepseek/deepseek-r1:free",
+    "deepseek/deepseek-r1-distill-llama-70b:free",
     "google/gemini-2.0-flash-exp:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "qwen/qwen-2.5-coder-32b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
@@ -622,14 +631,17 @@ def main():
     parser.add_argument("--lora", action="store_true", help="Enable LoRA (disabled by default)")
     parser.add_argument("--upscale", type=float, default=1.5, help="Hires upscale factor: 1.0 (off), 1.5 (default), 2.0, 4.0")
     parser.add_argument("--no-hires", action="store_true", help="Disable Hires Fix entirely")
-    parser.add_argument("--random-char", action="store_true", help="Use random anime characters instead of Lady Nuggets OC")
+    parser.add_argument("--oc", action="store_true", help="Force use Lady Nuggets OC instead of random characters")
     parser.add_argument("--debug", action="store_true", help="Show debug information")
     args = parser.parse_args()
     
     # Apply flags
     global USE_LORA, USE_RANDOM_CHAR
     USE_LORA = args.lora
-    USE_RANDOM_CHAR = args.random_char
+    # Random characters are enabled by default (USE_RANDOM_CHAR = True at top)
+    # Only disable if user explicitly asks for --oc
+    if args.oc:
+        USE_RANDOM_CHAR = False
     
     # Setup output directory
     output_dir = args.output if args.output else OUTPUT_DIR
