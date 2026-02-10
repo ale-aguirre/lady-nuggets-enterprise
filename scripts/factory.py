@@ -89,21 +89,39 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
 # === LADY NUGGETS CHARACTER DEFINITION ===
-# Illustrious-specific quality tokens: 'very awa' and 'source_anime' are trained into the model
-OC_BASE = """masterpiece, best quality, amazing quality, very awa, very aesthetic, absurdres, newest, source_anime, depth of field, highres,
-1girl, solo, full body, centered composition, looking at viewer, 
+# Quality prefix: Illustrious tokens + detail enhancers from proven high-quality prompts
+QUALITY_PREFIX = """masterpiece, best quality, amazing quality, very awa, very aesthetic, absurdres, newest, source_anime,
+(EyesHD:1.2), ultra-detailed, sharp focus, detailed illustration, detailed background, beautiful face, beautiful eyes"""
+
+# Artist mix (dramatically improves aesthetic quality)
+# Rotate different artist combos per generation for variety
+import random
+ARTIST_MIXES = [
+    "(mika pikazo:0.8), (yoneyama mai:0.6), (wlop:0.5)",
+    "(rella:1.0), (redum4:0.8), (wlop:0.6)",
+    "(artist:quasarcake:0.8), (wlop:0.6), (by kukka:0.5)",
+    "(mika pikazo:0.7), (kkia:0.6), (z3zz4:0.5)",
+    "(rella:0.8), (mika pikazo:0.6), (yoneyama mai:0.5)",
+]
+
+# Quality suffix (goes at end of prompt - proven high-impact tags)
+QUALITY_SUFFIX = """depth of field, highres, high detail, subtle, high contrast, colorful depth,
+chiaroscuro, impasto, (shallow depth of field:1.4), cinematic lighting"""
+
+# Character definition (body only, no quality tags)
+OC_CHARACTER = """1girl, solo, full body, centered composition, looking at viewer, 
 (very long black hair:1.4), large purple eyes, soft black eyeliner, makeup shadows, glossy lips, subtle blush, mole on chin, bright pupils, 
 narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, 
-(thick black cat tail, long tail, black cat ears), dynamic pose"""
+(thick black cat tail, long tail, black cat ears)"""
 
-# === NEGATIVE PROMPT (Aggressive anatomy fix) ===
-NEGATIVE_PROMPT = """worst quality, low quality, normal quality, 
-(bad anatomy:1.4), (bad hands:1.5), (extra fingers:1.5), (fewer fingers:1.5), (6 fingers:1.5), (extra digit:1.5), (missing fingers:1.4),
-(fused fingers:1.3), (too many fingers:1.3), (mutated hands:1.3), (poorly drawn hands:1.3), (deformed fingers:1.3),
-extra limbs, missing limbs, extra arms, extra legs, malformed limbs, fused limbs,
-(ugly face:1.2), (deformed face:1.2), (cross-eyed:1.2), asymmetric eyes,
-watermark, simple background, transparent, logo, text, signature, username,
-face backlighting, backlighting, ugly, deformed, duplicate, error, jpeg artifacts"""
+# === NEGATIVE PROMPT (from proven working prompts) ===
+NEGATIVE_PROMPT = """anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent,
+low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored,
+extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, bad proportions, lowres, bad_quality,
+(extra fingers:1.5), (fewer fingers:1.5), (6 fingers:1.5), (missing fingers:1.4),
+(fused fingers:1.3), (mutated hands:1.3), (poorly drawn hands:1.3),
+extra limbs, missing limbs, malformed limbs, fused limbs,
+(ugly face:1.2), (deformed face:1.2), (cross-eyed:1.2), asymmetric eyes"""
 
 # === LLM MODELS ===
 GROQ_MODELS = [
@@ -121,19 +139,21 @@ OPENROUTER_FREE_MODELS = [
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
-PROMPT_SYSTEM = """You are an expert Anime Art Director specialized in Danbooru-style prompts for Stable Diffusion.
-Your task is to create a scene prompt based on the given theme.
+PROMPT_SYSTEM = """You are an expert Anime Art Director for Illustrious XL models.
+Create a FOCUSED scene prompt. Quality and visual beauty are critical.
 
 RULES:
-1. OUTPUT ONLY comma-separated tags, NO explanations
-2. Include: outfit details, location, lighting, pose, expression
-3. Use precise Danbooru tags (e.g., "serafuku", not "school uniform")
-4. Outfit MUST match location (e.g., swimsuit for beach, not formal dress)
-5. Keep under 100 words
+1. OUTPUT ONLY comma-separated Danbooru tags, NO explanations
+2. Keep it SIMPLE and FOCUSED: 5-8 scene tags MAXIMUM
+3. Include: specific outfit (use Danbooru tags), location, ONE lighting style, ONE pose
+4. DO NOT add quality tags, artist names, or character descriptions (those are added automatically)
+5. Outfit MUST match theme
+6. Use precise Danbooru tags (e.g., "serafuku" not "school uniform", "maid_headdress" not "maid hat")
 
 EXAMPLES:
-Theme: "Witch Academy" → wearing black witch hat, gothic lolita dress, holding magic staff, standing in mystical library, ancient tomes, candlelight, mysterious smile, elegant pose
-Theme: "Beach Day" → wearing white bikini, sarong, standing on sandy beach, ocean waves, sunset lighting, playful pose, hair blowing in wind, holding sun hat"""
+Theme: "Witch Academy" → black witch hat, gothic lolita dress, holding magic staff, mystical library, candlelight, mysterious smile
+Theme: "Beach Day" → white bikini, sarong, sandy beach, ocean waves, sunset, playful pose, hair blowing
+Theme: "Office" → pencil skirt, white blouse, sitting on desk, office background, warm lighting, crossed legs"""
 
 # LoRA disabled by default - the LadyNuggets LoRA was causing quality issues
 # To re-enable, pass --lora flag when running factory.py
@@ -380,17 +400,18 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=1.5, no_h
     """
     log('gen', f"Starting generation with model: {model_name}")
     
-    # === OPTIMIZED FOR Illustrious-based models (OneObsession v19) ===
+    # === SETTINGS MATCHING PROVEN HIGH-QUALITY PROMPTS ===
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
         
-        # Generation settings (Illustrious optimal)
-        "steps": 25,                     # 20-25 sweet spot for Illustrious
-        "cfg_scale": 4.5,                # 4.5 = sweet spot. NEVER above 6
-        "width": 832,                    # Portrait: 832x1216 (2:3 ratio)
+        # Generation settings (from reference prompts)
+        "steps": 20,                     # Reference uses 20 steps
+        "cfg_scale": 5,                  # Reference uses CFG 5
+        "width": 832,                    # Portrait: 832x1216
         "height": 1216,
-        "sampler_name": "Euler a",       # Best for Illustrious family
+        "sampler_name": "Euler a",       # Same as reference
+        "scheduler": "Karras",           # Reference uses Karras schedule
         "batch_size": 1,
         
         "override_settings": {
@@ -399,19 +420,20 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=1.5, no_h
         },
     }
     
-    # Hires Fix (configurable)
+    # Hires Fix (matching reference: denoise 0.7, R-ESRGAN)
     use_hires = not no_hires and upscale_factor > 1.0
     if use_hires:
         payload.update({
             "enable_hr": True,
             "hr_scale": upscale_factor,
-            "hr_upscaler": "R-ESRGAN 4x+ Anime6B",  # Best for anime (preserves clean lines)
-            "denoising_strength": 0.35,               # Lower = preserve anatomy from 1st pass
-            "hr_second_pass_steps": 15,               # Enough for R-ESRGAN
+            "hr_upscaler": "R-ESRGAN 4x+ Anime6B",
+            "denoising_strength": 0.7,            # Reference uses 0.7 (not 0.35!)
+            "hr_second_pass_steps": 15,
+            "hr_cfg_scale": 5,                    # Reference sets hires CFG too
         })
         final_w = int(832 * upscale_factor)
         final_h = int(1216 * upscale_factor)
-        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h} (R-ESRGAN Anime)")
+        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h} (R-ESRGAN + Karras)")
     else:
         payload["enable_hr"] = False
         log('info', "Hires Fix: DISABLED (base 832x1216)")
@@ -595,10 +617,13 @@ def main():
         # Get AI-generated scene prompt
         scene_prompt = get_ai_prompt(theme)
         
-        # Build full prompt
-        full_prompt = f"{OC_BASE}, {scene_prompt}"
+        # Build full prompt: quality + artists + character + scene + suffix + lora
+        artist_mix = random.choice(ARTIST_MIXES)
+        full_prompt = f"{QUALITY_PREFIX}, {artist_mix}, {OC_CHARACTER}, {scene_prompt}, {QUALITY_SUFFIX}"
         if lora_block:
             full_prompt += f", {lora_block}"
+        
+        log('info', f"Artists: {artist_mix}")
         
         # Generate
         result = generate_image(full_prompt, NEGATIVE_PROMPT, model_name, 

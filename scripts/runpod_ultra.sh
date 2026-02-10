@@ -256,7 +256,7 @@ if [ -d "$ADETAILER_DIR" ]; then
 else
     echo -e "   ${CYAN}⬇️  Installing ADetailer (face + hand fix)...${NC}"
     
-    # Method 1: git clone (Anapnoe fork - most common for Reforge/Forge)
+    # Method 1: git clone (Anapnoe fork)
     GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git "$ADETAILER_DIR" 2>/dev/null
     
     if [ ! -d "$ADETAILER_DIR" ]; then
@@ -264,12 +264,26 @@ else
         GIT_TERMINAL_PROMPT=0 git clone --depth 1 https://github.com/Bing-su/adetailer.git "$ADETAILER_DIR" 2>/dev/null
     fi
     
+    if [ ! -d "$ADETAILER_DIR" ]; then
+        # Method 3: Download as zip (works even when git is blocked)
+        echo -e "   ${YELLOW}   Git failed, trying zip download...${NC}"
+        TEMP_ZIP="/tmp/adetailer.zip"
+        curl -sL -o "$TEMP_ZIP" "https://github.com/Bing-su/adetailer/archive/refs/heads/main.zip" 2>/dev/null
+        if [ -f "$TEMP_ZIP" ] && [ "$(stat -c%s "$TEMP_ZIP" 2>/dev/null || stat -f%z "$TEMP_ZIP" 2>/dev/null || echo "0")" -gt 10000 ]; then
+            unzip -q "$TEMP_ZIP" -d "/tmp/adetailer_extract" 2>/dev/null
+            mv /tmp/adetailer_extract/adetailer-main "$ADETAILER_DIR" 2>/dev/null
+            rm -rf "$TEMP_ZIP" /tmp/adetailer_extract 2>/dev/null
+        fi
+    fi
+    
     if [ -d "$ADETAILER_DIR" ]; then
+        # Install dependencies
+        pip install ultralytics 2>/dev/null || true
         echo -e "   ${GREEN}✅ ADetailer installed! Server will restart to load it.${NC}"
         NEED_SERVER_START=true
     else
-        echo -e "   ${YELLOW}⚠️  ADetailer auto-install failed (network issue?)${NC}"
-        echo -e "   ${YELLOW}   Manual: cd $SD_DIR/extensions && git clone https://github.com/Bing-su/adetailer.git${NC}"
+        echo -e "   ${YELLOW}⚠️  ADetailer auto-install failed${NC}"
+        echo -e "   ${YELLOW}   Try manual: pip install adetailer && cd $SD_DIR/extensions && git clone https://github.com/Bing-su/adetailer.git${NC}"
     fi
 fi
 
