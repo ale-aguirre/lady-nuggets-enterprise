@@ -68,5 +68,29 @@ else
     echo "  ✓ LTX Upscaler ya existe"
 fi
 
+# LoRAs (Extra Requirements)
+LORA_DIR="$COMFY_DIR/models/loras"
+mkdir -p $LORA_DIR
+
+# Distilled LoRA (7GB)
+if [ ! -f "$LORA_DIR/ltx-2-19b-distilled-lora-384.safetensors" ]; then
+    echo "  → Descargando Distilled LoRA (~7GB)..."
+    wget -O "$LORA_DIR/ltx-2-19b-distilled-lora-384.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2/resolve/main/ltx-2-19b-distilled-lora-384.safetensors" \
+        --progress=bar:force:noscroll
+else
+    echo "  ✓ Distilled LoRA ya existe"
+fi
+
+# Camera Control (Dolly Left)
+if [ ! -f "$LORA_DIR/ltx-2-19b-lora-camera-control-dolly-left.safetensors" ]; then
+    echo "  → Descargando Camera Control LoRA..."
+    wget -O "$LORA_DIR/ltx-2-19b-lora-camera-control-dolly-left.safetensors" \
+        "https://huggingface.co/Lightricks/LTX-2-19b-LoRA-Camera-Control-Dolly-Left/resolve/main/ltx-2-19b-lora-camera-control-dolly-left.safetensors" \
+        --progress=bar:force:noscroll
+else
+    echo "  ✓ Camera Control LoRA ya existe"
+fi
+
 echo ""
 echo "✅ Instalación LTX Completa. Reinicia ComfyUI."
