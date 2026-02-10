@@ -235,10 +235,9 @@ else
     else
         if [ -n "$CIVITAI_TOKEN" ]; then
             echo -e "   ${CYAN}⬇️  Downloading WAI-Illustrious v16 (~6.5GB, best anime checkpoint)...${NC}"
-            # CivitAI: modelId=827184 is WAI-NSFW-illustrious-SDXL
-            # Use direct model page download with token
+            # CivitAI versionId=2514310 = WAI-NSFW-illustrious-SDXL v16.0
             curl -L -o "$WAI_PATH" \
-                "https://civitai.com/api/download/models/827184?type=Model&format=SafeTensor&size=pruned&fp=fp16&token=${CIVITAI_TOKEN}" 2>/dev/null || true
+                "https://civitai.com/api/download/models/2514310?token=${CIVITAI_TOKEN}" 2>/dev/null || true
             FILE_SIZE=$(stat -c%s "$WAI_PATH" 2>/dev/null || stat -f%z "$WAI_PATH" 2>/dev/null || echo "0")
             if [ "$FILE_SIZE" -gt 1000000000 ]; then
                 echo -e "   ${GREEN}✅ WAI-Illustrious downloaded!${NC}"
@@ -377,33 +376,52 @@ wait_for_server() {
 }
 
 if [ "$NEED_SERVER_START" = true ]; then
-    if [ "$IS_RUNPOD" = true ]; then
+    # Check if server is already running (detected in Step 1)
+    if [ -n "$REFORGE_API" ]; then
+        # Server already running — DON'T kill it!
+        # Forge template runs its own server, we can't restart it with launch.py
+        echo -e "   ${YELLOW}⚠️  Extensions were installed but server is already running${NC}"
+        echo -e "   ${YELLOW}   ADetailer will be active on NEXT pod restart${NC}"
+        echo -e "   ${GREEN}✅ Using existing server at $REFORGE_API${NC}"
+    elif [ "$IS_RUNPOD" = true ]; then
         echo -e "   ${CYAN}🔄 Starting Stable Diffusion server...${NC}"
         
-        # Kill any existing processes
-        pkill -f "launch.py" 2>/dev/null || true
-        sleep 3
+        # Try to find the correct launch file
+        LAUNCH_FILE=""
+        for candidate in "$SD_DIR/launch.py" "$SD_DIR/webui.py" "$SD_DIR/main.py"; do
+            if [ -f "$candidate" ]; then
+                LAUNCH_FILE="$candidate"
+                break
+            fi
+        done
         
-        cd "$SD_DIR"
-        
-        # Fix root permission if needed
-        sed -i 's/can_run_as_root=0/can_run_as_root=1/g' webui.sh 2>/dev/null || true
-        
-        # Start server with API on port 7860 (bypasses nginx)
-        REFORGE_API="http://127.0.0.1:7860"
-        export REFORGE_API
-        nohup python3 launch.py --nowebui --api --listen --port 7860 --xformers --medvram-sdxl > /workspace/reforge.log 2>&1 &
-        
-        if ! wait_for_server; then
-            echo -e "   ${RED}❌ Server failed to start!${NC}"
-            echo "   📜 Last 20 lines of log:"
-            tail -n 20 /workspace/reforge.log
-            exit 1
+        if [ -z "$LAUNCH_FILE" ]; then
+            echo -e "   ${YELLOW}⚠️  Cannot find launch file in $SD_DIR${NC}"
+            echo -e "   ${YELLOW}   The server was running before but we can't restart it${NC}"
+            echo -e "   ${YELLOW}   Please restart the pod to apply extension changes${NC}"
+        else
+            # Kill any existing processes
+            pkill -f "launch.py" 2>/dev/null || true
+            pkill -f "webui.py" 2>/dev/null || true
+            sleep 3
+            
+            cd "$SD_DIR"
+            sed -i 's/can_run_as_root=0/can_run_as_root=1/g' webui.sh 2>/dev/null || true
+            
+            REFORGE_API="http://127.0.0.1:7860"
+            export REFORGE_API
+            nohup python3 "$LAUNCH_FILE" --nowebui --api --listen --port 7860 --xformers --medvram-sdxl > /workspace/reforge.log 2>&1 &
+            
+            if ! wait_for_server; then
+                echo -e "   ${RED}❌ Server failed to start!${NC}"
+                echo "   📜 Last 20 lines of log:"
+                tail -n 20 /workspace/reforge.log
+                exit 1
+            fi
+            
+            REFORGE_API="http://127.0.0.1:7860"
+            export REFORGE_API
         fi
-        
-        # Update REFORGE_API after server start
-        REFORGE_API="http://127.0.0.1:7860"
-        export REFORGE_API
     else
         echo -e "   ${RED}❌ No server running and cannot auto-start locally.${NC}"
         echo "      Please start your local SD server first, then run this script again."
