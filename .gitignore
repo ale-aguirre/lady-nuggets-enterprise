@@ -6,3 +6,4 @@ content/curated/
 *.zip
 .env
 config/.env
+backups/
