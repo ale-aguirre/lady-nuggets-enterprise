@@ -56,8 +56,8 @@ def detect_sd_api():
     Validates response is real SD API (JSON), not nginx proxy (HTML 405)."""
     env_api = os.getenv("REFORGE_API", "")
     
-    # Try ports in order of priority
-    ports = [7860, 7861, 7862]
+    # Try ports in order of priority (include Forge template ports)
+    ports = [7860, 7861, 7862, 3000, 3001, 8080, 8188]
     for port in ports:
         try:
             url = f"http://127.0.0.1:{port}"
@@ -153,11 +153,14 @@ GROQ_MODELS = [
     "gemma2-9b-it"
 ]
 
-OPENROUTER_FREE_MODELS = [
+# Paid models first (user has OpenRouter credit), then free fallbacks
+OPENROUTER_MODELS = [
+    "google/gemini-2.0-flash-001",
+    "meta-llama/llama-3.3-70b-instruct",
+    "anthropic/claude-3.5-haiku",
+    "mistralai/mistral-small-3.1-24b-instruct",
     "meta-llama/llama-3.3-70b-instruct:free",
     "google/gemini-2.0-flash-exp:free",
-    "mistralai/mistral-7b-instruct:free",
-    "qwen/qwen-2-7b-instruct:free",
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
@@ -308,7 +311,7 @@ def call_openrouter(theme):
         "X-Title": "Lady Nuggets Factory"
     }
     
-    for model in OPENROUTER_FREE_MODELS:
+    for model in OPENROUTER_MODELS:
         log('ai', f"[OpenRouter] Trying {model}...")
         try:
             payload = {
@@ -346,21 +349,44 @@ def get_ai_prompt(theme):
     """Get AI-generated prompt with fallback chain"""
     log('ai', f"Generating prompt for theme: '{theme}'")
     
-    # Try Groq first (fastest)
-    if GROQ_KEY:
-        result = call_groq(theme)
-        if result:
-            return result
-    
-    # Fallback to OpenRouter
+    # Try OpenRouter first (paid, reliable)
     if OPENROUTER_KEY:
         result = call_openrouter(theme)
         if result:
             return result
     
-    # Ultimate fallback
-    log('warning', "All AI providers failed. Using basic prompt.")
-    return f"{theme}, detailed background, dramatic lighting, dynamic pose"
+    # Fallback to Groq (free tier, daily limits)
+    if GROQ_KEY:
+        result = call_groq(theme)
+        if result:
+            return result
+    
+    # Ultimate fallback — rich Danbooru-style prompts per theme
+    log('warning', "All AI providers failed. Using built-in prompt library.")
+    theme_prompts = {
+        "Victorian Ball": "ballgown, white gloves, elbow gloves, chandelier, ballroom, dancing, candlelight, ornate architecture, gold trim, flowing dress, elegant",
+        "Cyberpunk Night": "cyberpunk, neon lights, rain, wet streets, holographic, tech wear, crop top, shorts, neon hair, city skyline, night, reflections",
+        "Beach Sunset": "beach, sunset, ocean, bikini, sarong, wind, golden hour, waves, palm trees, sand, standing in water, wet skin",
+        "Gothic Cathedral": "gothic architecture, stained glass, dark dress, cathedral, candles, dramatic shadows, long dress, cross necklace, solemn expression",
+        "Cherry Blossom": "cherry blossoms, petals falling, kimono, japanese garden, bridge, spring, pink flowers, wind, serene, traditional",
+        "School Uniform": "serafuku, sailor collar, classroom, window light, school desk, pleated skirt, sitting, looking at viewer, afternoon sun",
+        "Maid Cafe": "maid dress, maid headdress, frills, apron, cafe interior, tray, serving, smile, cute pose, heart hands",
+        "Fitness Gym": "sports bra, bike shorts, gym, dumbbells, sweat, ponytail, toned body, mirror, determined expression, athletic",
+        "Library Study": "glasses, sweater, bookshelf, reading, warm lighting, cozy, sitting, books, concentrated, library interior",
+        "Rain Walk": "umbrella, rain, wet hair, puddles, city street, transparent umbrella, coat, boots, reflection, moody lighting",
+        "Witch Forest": "witch hat, magic circle, glowing, dark forest, cape, staff, moonlight, mystical, floating particles, spell casting",
+        "Space Station": "spacesuit, holographic display, zero gravity, stars, space station interior, futuristic, floating hair, visor",
+        "Festival Night": "yukata, festival, paper lanterns, fireworks, night sky, goldfish scooping, crowd, warm lights, summer festival",
+        "Royal Throne": "crown, throne room, royal dress, scepter, red carpet, gold decoration, regal pose, cape, jewels, commanding",
+        "Underwater": "underwater, bubbles, flowing hair, mermaid tail, coral reef, sunlight rays, fish, ocean blue, serene, floating",
+        "Concert Stage": "idol, stage lights, microphone, concert, crowd, spotlight, glowing, singing, energy, colorful lights",
+        "Desert Oasis": "desert, oasis, belly dancer outfit, gold jewelry, palm trees, sunset, sand dunes, flowing fabric, exotic",
+        "Snow Mountain": "winter coat, fur trim, snow, mountain peak, aurora borealis, breath visible, mittens, scarf, cold, beautiful sky",
+        "Steampunk Workshop": "steampunk, goggles, gears, workshop, brass, mechanical, corset, inventor, tools, warm industrial lighting",
+        "Garden Tea Party": "tea party, garden, floral dress, hat, teacup, parasol, roses, afternoon, elegant, table setting",
+    }
+    fallback = theme_prompts.get(theme, f"{theme}, detailed outfit, scenic background, dramatic lighting, dynamic pose, cinematic composition")
+    return fallback
 
 def get_model_info():
     """Get current model info from server. Prioritizes WAI > OneObsession > anime."""
