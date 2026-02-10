@@ -60,16 +60,21 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=true
             shift
             ;;
+        --preset)
+            PRESET="$2"
+            shift 2
+            ;;
         --help|-h)
             echo "Usage: $0 [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --count, -c NUMBER    Number of images to generate (default: 2)"
+            echo "  --preset NAME         Load config/presets/NAME.env (e.g. 'oc-forced')"
             echo "  --random-char         Use random anime characters (not just Lady Nuggets)"
             echo "  --lora                Enable character LoRA"
             echo "  --theme TEXT          Use a specific theme"
             echo "  --no-hires            Disable Hires Fix (faster, lower quality)"
-            echo "  --no-model            Skip model download check"
+            echo "  --no-model            Skip model check"
             echo "  --verbose, -v         Show detailed output"
             echo "  --help, -h            Show this help message"
             exit 0
@@ -102,6 +107,21 @@ if [ -d "/workspace" ]; then
     echo -e "   ${GREEN}✅ RunPod Environment Detected${NC}"
     IS_RUNPOD=true
     WORK_DIR="/workspace/lady-nuggets-enterprise"
+    
+    # Handle Presets
+    if [ -n "$PRESET" ]; then
+        PRESET_FILE="$WORK_DIR/config/presets/${PRESET}.env"
+        if [ -f "$PRESET_FILE" ]; then
+            echo -e "   ${CYAN}📋 Loading preset: ${PRESET}${NC}"
+            # Backup current .env
+            cp "$WORK_DIR/config/.env" "$WORK_DIR/config/.env.backup" 2>/dev/null || true
+            # Apply preset
+            cp "$PRESET_FILE" "$WORK_DIR/config/.env"
+        else
+            echo -e "   ${RED}❌ Preset not found: $PRESET_FILE${NC}"
+            exit 1
+        fi
+    fi
     
     # Auto-detect SD installation (Forge, Reforge, or vanilla A1111)
     SD_DIR=""
@@ -466,6 +486,17 @@ else
     echo -e "   ${GREEN}✅ Perfect Eyes LoRA found${NC}"
 fi
 
+# Perfect Hands LoRA (EnvyBetterHands - Quality Fix)
+PERFECT_HANDS="$LORA_DIR/better_hands.safetensors"
+if [ ! -f "$PERFECT_HANDS" ]; then
+    echo -e "   ${CYAN}⬇️  Downloading Perfect Hands LoRA...${NC}"
+    curl -L -o "$PERFECT_HANDS" \
+        "https://civitai.com/api/download/models/2062094?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null && \
+    echo -e "   ${GREEN}✅ Perfect Hands downloaded${NC}"
+else
+    echo -e "   ${GREEN}✅ Perfect Hands LoRA found${NC}"
+fi
+
 # ==============================================================================
 # STEP 6: SERVER STARTUP (IF NEEDED)
 # ==============================================================================
@@ -622,6 +653,16 @@ zip -q -r "$ZIP_NAME" "$BATCH_DIR"
 
 # Count images
 IMG_COUNT=$(find "$BATCH_DIR" -name "*.png" 2>/dev/null | wc -l | tr -d ' ')
+
+# ==============================================================================
+# RESTORE BACKUP (IF PRESET USED)
+# ==============================================================================
+if [ -n "$PRESET" ] && [ -f "$WORK_DIR/config/.env.backup" ]; then
+    echo ""
+    echo -e "${BLUE}🔄 Restoring original .env configuration...${NC}"
+    mv "$WORK_DIR/config/.env.backup" "$WORK_DIR/config/.env"
+    echo -e "   ${GREEN}✅ Configuration restored${NC}"
+fi
 
 # ==============================================================================
 # SUMMARY
