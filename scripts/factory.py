@@ -767,18 +767,25 @@ def main():
             character = OC_CHARACTER
             log('info', "Character: Lady Nuggets OC")
         
-        section1 = f"{artist_mix},\n{QUALITY_PREFIX}"
+        # INJECT EMBEDDINGS (lazypos/lazyneg)
+        # These are Textual Inversion embeddings downloaded by runpod_ultra.sh
+        embedding_pos = "lazypos, "
+        embedding_neg = "lazyneg, "
+        
+        section1 = f"{embedding_pos}{artist_mix},\n{QUALITY_PREFIX}"
         section2 = f"{character}, {scene_prompt}"
         section3 = f"{QUALITY_SUFFIX}"
         if lora_block:
             section3 += f", {lora_block}"
         
         full_prompt = f"{section1},\nBREAK\n{section2},\nBREAK\n{section3}"
+        final_negative = f"{embedding_neg}{NEGATIVE_PROMPT}"
         
         log('info', f"Artists: {artist_mix}")
+        log('success', "Embeddings injected: lazypos, lazyneg")
         
         # Generate
-        result = generate_image(full_prompt, NEGATIVE_PROMPT, model_name, 
+        result = generate_image(full_prompt, final_negative, model_name, 
                                upscale_factor=args.upscale, no_hires=args.no_hires,
                                output_dir=output_dir)
         
