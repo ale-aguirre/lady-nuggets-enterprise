@@ -160,18 +160,18 @@ GROQ_MODELS = [
 ]
 
 # STRICTLY FREE models on OpenRouter
-# Updated Feb 2026 based on availability
+# Updated Feb 2026 - NO GOOGLE/GEMINI MODELS as requested
 OPENROUTER_MODELS = [
-    "google/gemini-2.0-pro-exp-02-05:free", # Incredible quality
-    "google/gemini-2.0-flash-thinking-exp:free", # Smart reasoning
-    "google/gemini-2.0-flash-exp:free", # Fast
+    "deepseek/deepseek-r1:free",             # Top tier reasoning
     "deepseek/deepseek-r1-distill-llama-70b:free", # Very smart
-    "deepseek/deepseek-r1:free", # Often busy
-    "meta-llama/llama-3.3-70b-instruct:free", # Great all-rounder
+    "deepseek/deepseek-v3-base:free",        # Good general purpose
+    "meta-llama/llama-3.3-70b-instruct:free", # GPT-4 class
     "nvidia/llama-3.1-nemotron-70b-instruct:free", # Nvidia optimized
-    "qwen/qwen-2.5-vl-72b-instruct:free", # Vision capable
-    "microsoft/phi-4:free", # Good small model
-    "mistralai/mistral-7b-instruct:free", # Fallback
+    "qwen/qwen-2.5-vl-72b-instruct:free",    # Vision capable
+    "qwen/qwen-2.5-coder-32b-instruct:free", # Code/Structured
+    "microsoft/phi-4:free",                  # Good small model
+    "mistralai/mistral-7b-instruct:free",     # Solid fallback
+    "cognitivecomputations/dolphin-mixtral-8x7b:free", # Uncensored/Creative
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
