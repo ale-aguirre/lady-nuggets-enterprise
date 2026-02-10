@@ -627,3 +627,14 @@ if [ ! -f "$EMBEDDING_DIR/lazyneg.safetensors" ] && [ -n "$CIVITAI_TOKEN" ]; the
     echo -e "   \${GREEN}✅ lazyneg downloaded${NC}"
 fi
 
+
+# Perfect Eyes LoRA (User Request)
+PERFECT_EYES="$LORA_DIR/perfect_eyes.safetensors"
+if [ ! -f "$PERFECT_EYES" ]; then
+    echo -e "   \${CYAN}⬇️  Downloading Perfect Eyes LoRA...${NC}"
+    curl -L -o "$PERFECT_EYES" \
+        "https://civitai.com/api/download/models/2066663?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null && \
+    echo -e "   \${GREEN}✅ Perfect Eyes downloaded${NC}"
+else
+    echo -e "   \${GREEN}✅ Perfect Eyes LoRA found${NC}"
+fi

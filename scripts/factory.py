@@ -241,6 +241,10 @@ def build_lora_block():
     # This bypasses API detection issues
     lora_tags.append("<lora:aesthetic_quality_masterpiece:0.6>")
     log('success', "Aesthetic LoRA: aesthetic_quality_masterpiece @ 0.6 (Forced)")
+
+    # HARDCODED PERFECT EYES LORA (User Request)
+    lora_tags.append("<lora:perfect_eyes:0.5>")
+    log('success', "Aesthetic LoRA: perfect_eyes @ 0.5 (Forced)")
     
     for lora in loras:
         name = lora.get('name', '')
@@ -772,7 +776,8 @@ def main():
         embedding_pos = "lazypos, "
         embedding_neg = "lazyneg, "
         
-        section1 = f"{embedding_pos}{artist_mix},\n{QUALITY_PREFIX}"
+        # Added "perfect eyes" trigger word here
+        section1 = f"{embedding_pos}perfect eyes, {artist_mix},\n{QUALITY_PREFIX}"
         section2 = f"{character}, {scene_prompt}"
         section3 = f"{QUALITY_SUFFIX}"
         if lora_block:
