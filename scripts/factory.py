@@ -161,7 +161,8 @@ GROQ_MODELS = [
 # DeepSeek R1 EXCLUSIVE - We only want the best reasoning
 OPENROUTER_MODELS = [
     "tngtech/deepseek-r1t2-chimera:free",  # User requested variant
-    "deepseek/deepseek-r1-distill-llama-70b:free", # Backup
+    "arcee-ai/trinity-large-preview:free", # Reliable Backup
+    "deepseek/deepseek-r1-distill-llama-70b:free", # Reasoning Backup
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
