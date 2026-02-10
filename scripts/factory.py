@@ -90,24 +90,23 @@ OUTPUT_DIR = os.path.join(BASE_DIR, "content", "raw")
 THEMES_FILE = os.path.join(BASE_DIR, "config", "themes.txt")
 
 # === LADY NUGGETS CHARACTER DEFINITION ===
-# Quality prefix: Illustrious tokens + detail enhancers from proven high-quality prompts
-QUALITY_PREFIX = """masterpiece, best quality, amazing quality, very awa, very aesthetic, absurdres, newest, source_anime,
-(EyesHD:1.2), ultra-detailed, sharp focus, detailed illustration, detailed background, beautiful face, beautiful eyes"""
-
-# Artist mix (dramatically improves aesthetic quality)
-# Rotate different artist combos per generation for variety
+# Quality prefix: User's Golden Formula (from Civitai proven prompts)
 import random
+QUALITY_PREFIX = """masterpiece,best quality,amazing quality,very aesthetic,absurdres,newest,highres,
+ultra-detailed,sharp focus,ray tracing,best lighting,detailed illustration,beautiful face,beautiful eyes"""
+
+# Artist mixes: User's exact golden mixes from their best generations
 ARTIST_MIXES = [
-    "(mika pikazo:0.8), (yoneyama mai:0.6), (wlop:0.5)",
-    "(rella:1.0), (redum4:0.8), (wlop:0.6)",
-    "(artist:quasarcake:0.8), (wlop:0.6), (by kukka:0.5)",
-    "(mika pikazo:0.7), (kkia:0.6), (z3zz4:0.5)",
-    "(rella:0.8), (mika pikazo:0.6), (yoneyama mai:0.5)",
+    "(yoneyama mai:1.16),(artist ciloranko:1.05),zhibuji loom,(fuzichoco:0.86),(rella:1.1),(konya karasue:1.1),(hagimorijia:1.05),wlop",
+    "(yoneyama mai:1.16),(artist ciloranko:1.05),(rella:1.1),liuyin,wlop",
+    "(rella:1.1),(mika pikazo:0.8),(yoneyama mai:0.9),wlop,(fuzichoco:0.7)",
+    "(rella:1.0),(redum4:0.8),(wlop:0.6),(konya karasue:0.8)",
 ]
 
-# Quality suffix (goes at end of prompt - proven high-impact tags)
-QUALITY_SUFFIX = """depth of field, highres, high detail, subtle, high contrast, colorful depth,
-chiaroscuro, impasto, (shallow depth of field:1.4), cinematic lighting"""
+# Quality suffix: User's proven high-impact tags (lazypos, impasto, foreshortening)
+QUALITY_SUFFIX = """lazypos,lazyup,high detail,subtle,high contrast,colorful depth,
+chiaroscuro,impasto,(shallow depth of field:1.4),(foreshortening:1.4),
+depth of field,cinematic lighting,ambient occlusion,soft lighting"""
 
 # Character definition (body only, no quality tags)
 OC_CHARACTER = """1girl, solo, full body, centered composition, looking at viewer, 
@@ -115,50 +114,40 @@ OC_CHARACTER = """1girl, solo, full body, centered composition, looking at viewe
 narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair, 
 (thick black cat tail, long tail, black cat ears)"""
 
-# Random anime characters for variety (used by default now)
-# === ARTIST STYLES (Randomly selected to ensure variety) ===
-# === ARTIST STYLES (Pinup / Soft / Vibrant) ===
-ARTIST_STYLES = {
-    "illustrious_clean": ["(artist:quasarcake)", "(artist:cutesexyrobutts)", "(artist:ke-ta)", "(artist:ask)", "(artist:sho_(sho_lwlw))"],
-    "vibrant_colorful": ["(artist:mika pikazo)", "(artist:fuzichoco)", "(artist:anmi)", "(artist:kantoku)", "(artist:dsmile)"],
-    "painterly_soft": ["(artist:wlop)", "(artist:shilin)", "(artist:as109)", "(artist:atdan)", "(artist:guweiz)"],
-    # Removed Dark/Edgy to fit Pinup style
-}
 
-# === CHARACTERS & SCENES (Pinup / Ecchi / Simple Backgrounds) ===
-# Focus: Girl, Pose, Suggestive, Simple BG
+
+# === CHARACTERS & SCENES (Pinup / Ecchi / Spicy) ===
 RANDOM_CHARACTERS = [
-    # -- PINUP SCENARIOS --
-    "1girl, lying on bed, white sheets, messy hair, looking at viewer, blush, suggestive, bedroom, morning light",
-    "1girl, onsen, steam, wet hair, blushing, looking at viewer, towel, japanese bath",
-    "1girl, beach, swimsuit, wet skin, lens flare, ocean background, tying hair",
-    "1girl, simple background, white background, studio lighting, high fashion pose, detailed face",
-    "1girl, gym wear, sweat, ponytail, drinking water, fitness center, mirror selfie",
+    # -- SPICY PINUP SCENARIOS --
+    "1girl, lying on bed, white sheets, messy hair, looking at viewer, blush, suggestive, bedroom, morning light, (pulling own clothes:1.4), (groin:1.2), panties",
+    "1girl, pink open shirt, collared shirt, black bra, denim shorts, open fly, lace-trimmed panties, breast press, looking at viewer, blush, bedroom",
+    "1girl, onsen, steam, wet hair, blushing, looking at viewer, towel, japanese bath, naked, wet skin, droplets",
+    "1girl, beach, swimsuit, wet skin, lens flare, ocean background, tying hair, cleavage, navel, shiny skin",
+    "1girl, gym wear, sweat, ponytail, drinking water, fitness center, mirror selfie, yoga pants, cameltoe, tight clothes",
+    "1girl, selfiestick, holding phone, duck face, cleavage, crop top, navel, mirror, flash",
+    "1girl, from behind, ass focus, looking back, panties, skirt lift, suggestive, blush, detailed skin",
     
     # -- POPULAR WAIFUS (Pinup Verify) --
-    "furina \(genshin impact\), 1girl, solo, nightgown, bedroom, holding pillow, cute",
-    "kafka \(honkai: star rail\), 1girl, solo, office lady, glasses, sitting on desk, crossing legs, teasing smile",
-    "black swan \(honkai: star rail\), 1girl, solo, purple dress, tarot cards, mystical atmosphere, simple background",
-    "jinx \(league of legends\), 1girl, solo, underwear, messy room, graffiti, eating snacks, relaxed",
-    "ahri \(league of legends\), 1girl, solo, kda all out, backstage, mirror, brushing tail",
-    "yor briar \(spy x family\), 1girl, solo, sweater, casual clothes, kitchen, cooking, blushing, happy",
-    "makima \(chainsaw man\), 1girl, solo, white shirt, tie, smoking, balcony, city lights, melancholic",
-    "2b \(nier:automata\), 1girl, solo, white dress (optional), field of flowers, taking off blindfold, beautiful eyes",
-    "tifa lockhart \(ff7\), 1girl, solo, barmaid uniform, wiping counter, 7th heaven, smiling, warm lighting",
-    "marin kitagawa \(sono bisque doll\), 1girl, solo, bikini, beach, laughing, gyaru, peace sign",
-    "lucy \(cyberpunk edgerunners\), 1girl, solo, oversized t-shirt, sitting on roof, moon, smoking",
+    "furina \(genshin impact\), 1girl, solo, nightgown, bedroom, holding pillow, cute, thighs, bare legs",
+    "kafka \(honkai: star rail\), 1girl, solo, office lady, glasses, sitting on desk, crossing legs, teasing smile, black pantyhose, heels",
+    "black swan \(honkai: star rail\), 1girl, solo, purple dress, tarot cards, mystical atmosphere, simple background, cleavage",
+    "jinx \(league of legends\), 1girl, solo, underwear, messy room, graffiti, eating snacks, relaxed, tattoos, pale skin",
+    "ahri \(league of legends\), 1girl, solo, kda all out, backstage, mirror, brushing tail, cleavage, corset",
+    "yor briar \(spy x family\), 1girl, solo, sweater, casual clothes, kitchen, cooking, blushing, happy, apron",
+    "makima \(chainsaw man\), 1girl, solo, white shirt, tie, smoking, balcony, city lights, melancholic, office lady",
+    "2b \(nier:automata\), 1girl, solo, white dress (optional), field of flowers, taking off blindfold, beautiful eyes, thighs",
+    "tifa lockhart \(ff7\), 1girl, solo, barmaid uniform, wiping counter, 7th heaven, smiling, warm lighting, cleavage, suspenders",
+    "marin kitagawa \(sono bisque doll\), 1girl, solo, bikini, beach, laughing, gyaru, peace sign, cleavage, tongue out",
 ]
 
 # Flag for random character mode
 USE_RANDOM_CHAR = True
 
-# === NEGATIVE PROMPT (from proven working prompts) ===
-# === NEGATIVE PROMPT (Anti-Gas Mask & Bad Anatomy) ===
-NEGATIVE_PROMPT = """gas mask, mask, face mask, face decoration, facial covering,
-anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent,
-low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored,
-extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, bad proportions, lowres, bad_quality,
-normal quality, monochrome, grayscale"""
+# === NEGATIVE PROMPT (User's Proven Formula) ===
+NEGATIVE_PROMPT = """anatomical nonsense,interlocked fingers,extra fingers,watermark,transparent,
+low quality,logo,text,signature,(worst quality, bad quality:1.2),jpeg artifacts,username,censored,
+extra digit,ugly,bad_hands,bad_feet,bad_anatomy,deformed anatomy,bad proportions,lowres,bad_quality,
+worst_quality,bad_detail,poorly_detailed,deformed hands,missing finger,muscular woman"""
 
 # === LLM MODELS ===
 GROQ_MODELS = [
@@ -478,11 +467,14 @@ def log_server_state():
     
     print(f"{Colors.CYAN}{'='*60}{Colors.END}\n")
 
-def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_hires=False):
+def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_hires=False, output_dir=None):
     """Call SD API with retry logic
     Args:
         upscale_factor: 2.0 (default for high qual), 1.5, 1.0 (off)
+        output_dir: Directory to save images to (fixes ZIP bug)
     """
+    if output_dir is None:
+        output_dir = OUTPUT_DIR
     log('gen', f"Starting generation with model: {model_name}")
     
     # Detect model type
@@ -603,14 +595,14 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
             # Save Image
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f"lady_nuggets_{timestamp}_{idx}.png"
-            filepath = os.path.join(OUTPUT_DIR, filename)
+            filepath = os.path.join(output_dir, filename)
             
             with open(filepath, "wb") as f:
                 f.write(base64.b64decode(img_b64))
             
             # Save JSON Metadata
             json_filename = f"lady_nuggets_{timestamp}_{idx}.json"
-            json_filepath = os.path.join(OUTPUT_DIR, json_filename)
+            json_filepath = os.path.join(output_dir, json_filename)
             with open(json_filepath, "w") as f:
                 json.dump(metadata, f, indent=2)
                 
@@ -758,7 +750,8 @@ def main():
         
         # Generate
         result = generate_image(full_prompt, NEGATIVE_PROMPT, model_name, 
-                               upscale_factor=args.upscale, no_hires=args.no_hires)
+                               upscale_factor=args.upscale, no_hires=args.no_hires,
+                               output_dir=output_dir)
         
         # Save check
         if result:
