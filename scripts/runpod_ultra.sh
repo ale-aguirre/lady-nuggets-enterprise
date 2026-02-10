@@ -102,7 +102,24 @@ if [ -d "/workspace" ]; then
     echo -e "   ${GREEN}✅ RunPod Environment Detected${NC}"
     IS_RUNPOD=true
     WORK_DIR="/workspace/lady-nuggets-enterprise"
-    SD_DIR="/workspace/stable-diffusion-webui"
+    
+    # Auto-detect SD installation (Forge, Reforge, or vanilla A1111)
+    SD_DIR=""
+    for candidate_dir in \
+        "/workspace/stable-diffusion-webui-forge" \
+        "/workspace/stable-diffusion-webui-reforge" \
+        "/workspace/stable-diffusion-webui" \
+        "/workspace/sd-webui"; do
+        if [ -d "$candidate_dir" ]; then
+            SD_DIR="$candidate_dir"
+            break
+        fi
+    done
+    
+    if [ -z "$SD_DIR" ]; then
+        echo -e "   ${YELLOW}⚠️  No SD installation found in /workspace${NC}"
+        SD_DIR="/workspace/stable-diffusion-webui"  # fallback
+    fi
 else
     echo -e "   ${YELLOW}⚠️  Local Environment Detected${NC}"
     IS_RUNPOD=false
@@ -121,19 +138,42 @@ echo -e "${BLUE}🔌 [1/7] Detecting SD API Server...${NC}"
 
 REFORGE_API=""
 NEED_SERVER_START=false
-PORTS_TO_CHECK=(7860 7861 7862 8080 3000)
+PORTS_TO_CHECK=(7860 7861 7862 3000 8080)
 
-for port in "${PORTS_TO_CHECK[@]}"; do
-    # Must return valid JSON from SD API, not nginx HTML
-    RESPONSE=$(curl -s --connect-timeout 2 "http://127.0.0.1:$port/sdapi/v1/sd-models" 2>/dev/null || echo "")
-    if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
-        echo -e "   ${GREEN}✅ SD API verified on port $port${NC}"
-        REFORGE_API="http://127.0.0.1:$port"
-        break
-    elif [ -n "$RESPONSE" ]; then
-        echo -e "   ${YELLOW}⚠️  Port $port responds but not SD API (nginx proxy?)${NC}"
+# On RunPod, the Forge server may still be loading models after boot.
+# Retry up to 90 seconds before giving up.
+MAX_RETRIES=1
+if [ "$IS_RUNPOD" = true ]; then
+    MAX_RETRIES=15  # 15 retries × 6 seconds = 90 seconds max wait
+fi
+
+for attempt in $(seq 1 $MAX_RETRIES); do
+    for port in "${PORTS_TO_CHECK[@]}"; do
+        # Must return valid JSON from SD API, not nginx HTML
+        RESPONSE=$(curl -s --connect-timeout 2 "http://127.0.0.1:$port/sdapi/v1/sd-models" 2>/dev/null || echo "")
+        if echo "$RESPONSE" | python3 -c "import sys,json; json.load(sys.stdin)" 2>/dev/null; then
+            echo -e "   ${GREEN}✅ SD API verified on port $port${NC}"
+            REFORGE_API="http://127.0.0.1:$port"
+            break 2  # break both loops
+        elif [ -n "$RESPONSE" ] && [ $attempt -eq 1 ]; then
+            echo -e "   ${YELLOW}⚠️  Port $port responds but not SD API (still loading?)${NC}"
+        fi
+    done
+    
+    if [ $attempt -lt $MAX_RETRIES ]; then
+        if [ $attempt -eq 1 ]; then
+            echo -n "   ⏳ Waiting for Forge to finish loading"
+        fi
+        echo -n "."
+        sleep 6
     fi
 done
+
+if [ -n "$REFORGE_API" ]; then
+    echo ""
+else
+    echo ""
+fi
 
 if [ -z "$REFORGE_API" ]; then
     echo -e "   ${YELLOW}⚠️  No active SD API found. Will start server on port 7860.${NC}"
