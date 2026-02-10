@@ -161,6 +161,7 @@ GROQ_MODELS = [
 # DeepSeek R1 EXCLUSIVE - We only want the best reasoning
 OPENROUTER_MODELS = [
     "deepseek/deepseek-r1:free",           # ★ PRIORITY - Best reasoning
+    "tngtech/deepseek-r1t2-chimera:free",  # User requested variant
     "deepseek/deepseek-r1-distill-llama-70b:free", # Backup
 ]
 
