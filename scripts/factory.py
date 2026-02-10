@@ -132,14 +132,14 @@ RANDOM_CHARACTERS = [
     "raiden shogun \\(genshin impact\\), 1girl, solo, purple hair, long braided hair, purple eyes, electro archon",
     "sailor moon \\(tsukino usagi\\), 1girl, solo, blonde hair, twintails, blue eyes, sailor uniform, tiara, magical girl",
     "hatsune miku \\(vocaloid\\), 1girl, solo, aqua hair, very long twintails, aqua eyes, headset, futuristic",
-    "son goku \\(dragon ball\\), 1boy, solo, spiky hair, black hair, orange gi, muscular, fighting stance",
-    "uzumaki naruto \\(naruto\\), 1boy, solo, blonde hair, spiky hair, blue eyes, whiskers, headband, orange jumpsuit",
-    "monkey d. luffy \\(one piece\\), 1boy, solo, black hair, short hair, scar on cheek, straw hat, red vest, smiling",
-    "gojo satoru \\(jujutsu kaisen\\), 1boy, solo, white hair, blindfold, tall, sorcerer uniform, carefree",
-    "tanjiro kamado \\(kimetsu no yaiba\\), 1boy, solo, burgundy hair, scar on forehead, hanafuda earrings, checkerboard haori, katana",
     "misato katsuragi \\(evangelion\\), 1girl, solo, purple hair, long hair, red jacket, black dress, cross necklace, beer can",
     "tifa lockhart \\(ff7\\), 1girl, solo, black hair, long hair, red eyes, white tank top, suspenders, black skirt, gloves",
     "aerith gainsborough \\(ff7\\), 1girl, solo, brown hair, long braid, green eyes, pink dress, red jacket, flowers",
+    "lucy \\(cyberpunk edgerunners\\), 1girl, solo, white hair, multicolored hair, purple eyes, netrunner suit, futuristic city",
+    "rebecca \\(cyberpunk edgerunners\\), 1girl, solo, green hair, twintails, red eyes, tattoo, oversized jacket, gun",
+    "ahri \\(league of legends\\), 1girl, solo, fox ears, fox tail, nine tails, blonde hair, yellow eyes, hanbok, korean clothes",
+    "d-va \\(overwatch\\), 1girl, solo, brown hair, brown eyes, headset, face paint, pilot suit, mech",
+    "nezuko kamado \\(kimetsu no yaiba\\), 1girl, solo, black hair, orange tips, pink eyes, bamboo muzzle, kimono",
 ]
 
 # Flag for random character mode (Enabled by default for variety)
@@ -149,10 +149,7 @@ USE_RANDOM_CHAR = True
 NEGATIVE_PROMPT = """anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent,
 low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored,
 extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, bad proportions, lowres, bad_quality,
-(extra fingers:1.5), (fewer fingers:1.5), (6 fingers:1.5), (missing fingers:1.4),
-(fused fingers:1.3), (mutated hands:1.3), (poorly drawn hands:1.3),
-extra limbs, missing limbs, malformed limbs, fused limbs,
-(ugly face:1.2), (deformed face:1.2), (cross-eyed:1.2), asymmetric eyes"""
+normal quality, monochrome, grayscale"""
 
 # === LLM MODELS ===
 GROQ_MODELS = [
@@ -162,14 +159,13 @@ GROQ_MODELS = [
     "gemma2-9b-it"
 ]
 
-# Powerful free models on OpenRouter (DeepSeek R1, Llama 3.3, Gemini 2.0 Flash)
+# STRICTLY FREE models on OpenRouter
 OPENROUTER_MODELS = [
-    "deepseek/deepseek-r1:free",
-    "deepseek/deepseek-r1-distill-llama-70b:free",
-    "google/gemini-2.0-flash-exp:free",
-    "meta-llama/llama-3.3-70b-instruct:free",
-    "qwen/qwen-2.5-coder-32b-instruct:free",
-    "mistralai/mistral-7b-instruct:free",
+    "deepseek/deepseek-r1:free",             # Top tier reasoning (Free)
+    "meta-llama/llama-3.3-70b-instruct:free", # GPT-4 class (Free)
+    "google/gemini-2.0-flash-exp:free",       # Fast & smart (Free)
+    "qwen/qwen-2.5-coder-32b-instruct:free",  # Good at structured output (Free)
+    "mistralai/mistral-7b-instruct:free",     # Solid fallback (Free)
 ]
 
 # === PROMPT ENGINEER SYSTEM ===
