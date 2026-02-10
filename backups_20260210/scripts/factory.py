@@ -116,45 +116,37 @@ narrow waist, wide hips, cute, sexually suggestive, naughty face, wavy hair,
 (thick black cat tail, long tail, black cat ears)"""
 
 # Random anime characters for variety (used by default now)
-# === ARTIST STYLES (Randomly selected to ensure variety) ===
-ARTIST_STYLES = {
-    "illustrious_clean": ["(artist:quasarcake)", "(artist:cutesexyrobutts)", "(artist:ke-ta)", "(artist:ask)", "(artist:sho_(sho_lwlw))"],
-    "vibrant_colorful": ["(artist:mika pikazo)", "(artist:fuzichoco)", "(artist:anmi)", "(artist:kantoku)", "(artist:dsmile)"],
-    "painterly_soft": ["(artist:wlop)", "(artist:shilin)", "(artist:as109)", "(artist:atdan)", "(artist:guweiz)"],
-    "dark_edgy": ["(artist:mashu_003)", "(artist:redjuice)", "(artist:huke)", "(artist:so-bin)"]
-}
-
-# === CHARACTERS & SCENES (High Quality / Dynamic) ===
-# Female Only - Monitors trends
 RANDOM_CHARACTERS = [
-    # -- DUOS & DYNAMIC --
-    "2girls, yuri, interacting, back-to-back, fighting stance, dynamic angle, battlefield, sword fight, sparks",
-    "2girls, hugging, yuri, beach sunset, lens flare, emotional",
-    "2girls, cyberpunk city, neon lights, motorcycle, leather jackets, cool pose",
-    
-    # -- POPULAR WAIFUS --
-    "furina \(genshin impact\), 1girl, solo, top hat, blue dress, hydro archon, ornate stage",
-    "kafka \(honkai: star rail\), 1girl, solo, spider motifs, sunglasses, confident smirk, holding gun",
-    "black swan \(honkai: star rail\), 1girl, solo, purple veil, tarot cards, mystical atmosphere",
-    "acheron \(honkai: star rail\), 1girl, solo, red lightning, katana, rain, dark atmosphere",
-    "jinx \(league of legends\), 1girl, solo, blue braids, chaotic energy, graffiti background, holding rocket launcher",
-    "kai'sa \(league of legends\), 1girl, solo, void skin, purple energy, floating",
-    "evelynn \(league of legends\), 1girl, solo, shadow form, glowing eyes, claws",
-    "yor briar \(spy x family\), 1girl, solo, assassin dress, blood on face, cold expression, daggers",
-    "makima \(chainsaw man\), 1girl, solo, business suit, yellow eyes, controlling gaze",
-    "2b \(nier:automata\), 1girl, solo, blindfold, sword on back, ruined city background",
-    "tifa lockhart \(ff7\), 1girl, solo, fighting pose, limit break, blue aura",
-    "aerith gainsborough \(ff7\), 1girl, solo, praying, flower field, lifestream particles",
-    "lucy \(cyberpunk edgerunners\), 1girl, solo, white hair, neon wires, hacking interface",
+    "makima \\(chainsaw man\\), 1girl, solo, red hair, ringed eyes, yellow eyes, braided ponytail, business suit",
+    "yor briar \\(spy x family\\), 1girl, solo, black hair, long hair, red eyes, earrings, thorn princess",
+    "power \\(chainsaw man\\), 1girl, solo, long hair, blonde hair, red horns, yellow eyes, sharp teeth, fiend",
+    "nico robin \\(one piece\\), 1girl, solo, black hair, long hair, blue eyes, mature female, cowboy hat",
+    "zero two \\(darling in the franxx\\), 1girl, solo, long hair, pink hair, green eyes, red horns, pilot suit",
+    "rem \\(re:zero\\), 1girl, solo, blue hair, short hair, blue eyes, hair ornament, maid",
+    "hinata hyuuga \\(naruto\\), 1girl, solo, long hair, dark blue hair, white eyes, byakugan, shy",
+    "asuna \\(sao\\), 1girl, solo, long hair, orange hair, brown eyes, knights of blood uniform",
+    "marin kitagawa \\(sono bisque doll\\), 1girl, solo, blonde hair, long hair, blue eyes, gyaru, earrings",
+    "frieren \\(sousou no frieren\\), 1girl, solo, long hair, white hair, green eyes, elf, pointy ears, staff",
+    "esdeath \\(akame ga kill!\\), 1girl, solo, long hair, blue hair, blue eyes, general, military uniform, hat",
+    "2b \\(nier:automata\\), 1girl, solo, white hair, short hair, blindfold, black dress, thigh boots",
+    "raiden shogun \\(genshin impact\\), 1girl, solo, purple hair, long braided hair, purple eyes, electro archon",
+    "sailor moon \\(tsukino usagi\\), 1girl, solo, blonde hair, twintails, blue eyes, sailor uniform, tiara, magical girl",
+    "hatsune miku \\(vocaloid\\), 1girl, solo, aqua hair, very long twintails, aqua eyes, headset, futuristic",
+    "misato katsuragi \\(evangelion\\), 1girl, solo, purple hair, long hair, red jacket, black dress, cross necklace, beer can",
+    "tifa lockhart \\(ff7\\), 1girl, solo, black hair, long hair, red eyes, white tank top, suspenders, black skirt, gloves",
+    "aerith gainsborough \\(ff7\\), 1girl, solo, brown hair, long braid, green eyes, pink dress, red jacket, flowers",
+    "lucy \\(cyberpunk edgerunners\\), 1girl, solo, white hair, multicolored hair, purple eyes, netrunner suit, futuristic city",
+    "rebecca \\(cyberpunk edgerunners\\), 1girl, solo, green hair, twintails, red eyes, tattoo, oversized jacket, gun",
+    "ahri \\(league of legends\\), 1girl, solo, fox ears, fox tail, nine tails, blonde hair, yellow eyes, hanbok, korean clothes",
+    "d-va \\(overwatch\\), 1girl, solo, brown hair, brown eyes, headset, face paint, pilot suit, mech",
+    "nezuko kamado \\(kimetsu no yaiba\\), 1girl, solo, black hair, orange tips, pink eyes, bamboo muzzle, kimono",
 ]
 
-# Flag for random character mode
+# Flag for random character mode (Enabled by default for variety)
 USE_RANDOM_CHAR = True
 
 # === NEGATIVE PROMPT (from proven working prompts) ===
-# === NEGATIVE PROMPT (Anti-Gas Mask & Bad Anatomy) ===
-NEGATIVE_PROMPT = """gas mask, mask, face mask, face decoration, facial covering,
-anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent,
+NEGATIVE_PROMPT = """anatomical nonsense, interlocked fingers, extra fingers, watermark, simple background, transparent,
 low quality, logo, text, signature, (worst quality, bad quality:1.2), jpeg artifacts, username, censored,
 extra digit, ugly, bad_hands, bad_feet, bad_anatomy, deformed anatomy, bad proportions, lowres, bad_quality,
 normal quality, monochrome, grayscale"""
@@ -473,26 +465,28 @@ def log_server_state():
     
     print(f"{Colors.CYAN}{'='*60}{Colors.END}\n")
 
-def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_hires=False):
+def generate_image(prompt, negative_prompt, model_name, upscale_factor=1.5, no_hires=False):
     """Call SD API with retry logic
     Args:
-        upscale_factor: 2.0 (default for high qual), 1.5, 1.0 (off)
+        upscale_factor: 1.0 (off), 1.5 (default), 2.0, 4.0
+        no_hires: If True, disable hires fix entirely
     """
     log('gen', f"Starting generation with model: {model_name}")
     
-    # Detect model type
+    # Detect model type for optimal params
     is_wai = 'wai' in model_name.lower()
+    is_oneobs = 'obsession' in model_name.lower()
     
-    # OPTIMIZED SETTINGS FOR QUALITY
-    # WAI needs lower denoise to not distort anatomy
-    hr_denoise = 0.35 if is_wai else 0.55
+    # WAI: lower denoise (0.45), OneObsession: higher denoise (0.7)
+    hr_denoise = 0.45 if is_wai else 0.7
     
+    # === SETTINGS MATCHING PROVEN HIGH-QUALITY PROMPTS ===
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
         
-        # High Quality Settings
-        "steps": 28,  # Increased from 20 for better detail
+        # Generation settings (proven optimal for Illustrious family)
+        "steps": 20,
         "cfg_scale": 5,
         "width": 832,
         "height": 1216,
@@ -506,7 +500,7 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
         },
     }
     
-    # Hires Fix (2x Default)
+    # Hires Fix
     use_hires = not no_hires and upscale_factor > 1.0
     if use_hires:
         payload.update({
@@ -524,8 +518,7 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
         payload["enable_hr"] = False
         log('info', "Hires Fix: DISABLED (base 832x1216)")
     
-    # ADetailer: HIGH RES FIX (1024x1024)
-    # This prevents the blurry face issue by rendering the face at high res before pasting back
+    # ADetailer: auto-detect and enable with face + hand fix
     try:
         scripts_resp = requests.get(f"{REFORGE_API}/sdapi/v1/scripts", timeout=5)
         if scripts_resp.status_code == 200:
@@ -535,77 +528,70 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=2.0, no_h
                 payload["alwayson_scripts"] = {
                     "ADetailer": {
                         "args": [
-                            {   # Slot 1: Face fix (High Res)
+                            {   # Slot 1: Face fix
                                 "ad_model": "face_yolov8n.pt",
                                 "ad_prompt": "detailed face, beautiful eyes, perfect face",
-                                "ad_negative_prompt": "ugly face, deformed face, gas mask, mask",
+                                "ad_negative_prompt": "ugly face, deformed face",
                                 "ad_confidence": 0.3,
-                                "ad_denoising_strength": 0.4,
-                                "ad_inpaint_width": 1024,
-                                "ad_inpaint_height": 1024
+                                "ad_denoising_strength": 0.35
                             },
-                            {   # Slot 2: Hand fix (High Res)
+                            {   # Slot 2: Hand fix (the 6-finger killer)
                                 "ad_model": "hand_yolov8n.pt",
                                 "ad_prompt": "detailed hands, perfect fingers, 5 fingers",
                                 "ad_negative_prompt": "extra fingers, fewer fingers, bad hands, 6 fingers",
                                 "ad_confidence": 0.3,
-                                "ad_denoising_strength": 0.45,
-                                "ad_inpaint_width": 1024,
-                                "ad_inpaint_height": 1024
+                                "ad_denoising_strength": 0.4
                             }
                         ]
                     }
                 }
-                log('success', "ADetailer: face + hand fix enabled (@ 1024px)")
+                log('success', "ADetailer: face + hand fix enabled")
             else:
-                log('warning', "ADetailer not found")
-    except Exception:
-        pass
-
-    # SAVE JSON METADATA
-    try:
-        # Create metadata payload
-        metadata = {
-            "timestamp": datetime.now().isoformat(),
-            "prompt": prompt,
-            "negative_prompt": negative_prompt,
-            "steps": payload["steps"],
-            "cfg_scale": payload["cfg_scale"],
-            "sampler": payload["sampler_name"],
-            "model": model_name,
-            "hires_upscale": upscale_factor if use_hires else "None",
-            "denoising_strength": hr_denoise if use_hires else "N/A"
-        }
+                log('warning', "ADetailer not installed — run: cd /workspace/stable-diffusion-webui/extensions && git clone https://github.com/Anapnoe/stable-diffusion-webui-adetailer.git adetailer")
     except:
-        metadata = {}
-
-    log('info', "Sending request to SD Forge...")
-    resp = requests.post(f"{REFORGE_API}/sdapi/v1/txt2img", json=payload, timeout=600)
+        log('warning', "Could not check scripts endpoint")
     
-    if resp.status_code == 200:
-        data = resp.json()
-        if 'images' not in data:
-            log('error', "No images returned")
-            return
+    # Log payload summary
+    print(f"\n{Colors.WHITE}📜 Generation Config:{Colors.END}")
+    print(f"   Model: {model_name}")
+    hr_info = f" → {int(832*upscale_factor)}x{int(1216*upscale_factor)} (Hires {upscale_factor}x)" if use_hires else ""
+    print(f"   Size: {payload['width']}x{payload['height']}{hr_info}")
+    has_ad = "alwayson_scripts" in payload and "ADetailer" in payload.get("alwayson_scripts", {})
+    print(f"   ADetailer: {'✅ face+hands' if has_ad else '❌ not available'}")
+    print(f"   Prompt: {prompt[:80]}...")
+    
+    # Retry logic
+    max_retries = 2
+    for attempt in range(max_retries):
+        try:
+            log('info', f"Attempt {attempt + 1}/{max_retries}...")
+            resp = requests.post(
+                f"{REFORGE_API}/sdapi/v1/txt2img",
+                json=payload,
+                timeout=300  # 5 min timeout for generation
+            )
             
-        for idx, img_b64 in enumerate(data['images']):
-            # Save Image
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"lady_nuggets_{timestamp}_{idx}.png"
-            filepath = os.path.join(OUTPUT_DIR, filename)
-            
-            with open(filepath, "wb") as f:
-                f.write(base64.b64decode(img_b64))
-            
-            # Save JSON Metadata
-            json_filename = f"lady_nuggets_{timestamp}_{idx}.json"
-            json_filepath = os.path.join(OUTPUT_DIR, json_filename)
-            with open(json_filepath, "w") as f:
-                json.dump(metadata, f, indent=2)
+            if resp.status_code == 200:
+                log('success', "Generation complete!")
+                return resp.json()
+            else:
+                error_body = resp.text[:200]
+                log('error', f"Generation failed ({resp.status_code}): {error_body}")
                 
-            log('success', f"Saved: {filename} + .json")
-    else:
-        log('error', f"Generation failed: {resp.text}")
+                # Check for model error
+                if 'SafetensorError' in error_body:
+                    log('error', "Model file is corrupted! Please re-download.")
+                    return None
+                    
+        except requests.exceptions.Timeout:
+            log('warning', "Request timed out, retrying...")
+        except Exception as e:
+            log('error', f"Request error: {e}")
+        
+        if attempt < max_retries - 1:
+            time.sleep(2)
+    
+    return None
 
 def save_image(data, prompt, output_dir):
     """Save generated image and metadata"""
