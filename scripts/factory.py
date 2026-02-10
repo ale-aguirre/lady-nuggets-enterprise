@@ -197,14 +197,14 @@ RULES:
 6. FORBIDDEN: Do not use "fighting", "blood", "weapon", "armor", "crowd", "complex background".
 
 EXAMPLES:
-Input: "Bedroom"
-Output: masterpiece, best quality, 1girl, solo, sitting on bed, messy hair, white tank top, panties, blush, looking at viewer, thighs, soft lighting, bedroom, morning light, detailed skin, cute
+Input: "Bedroom (Lingerie)"
+Output: masterpiece, best quality, 1girl, solo, sitting on bed, messy hair, white tank top, panties, blush, looking at viewer, thighs, soft lighting, bedroom, morning light, detailed skin
 
-Input: "Beach"
-Output: masterpiece, best quality, 1girl, solo, white bikini, wet skin, cleavage, smile, ponytail, beach, ocean, simple background, lens flare, shiny skin, navel
+Input: "Feet Focus"
+Output: masterpiece, best quality, 1girl, solo, barefoot, soles, toes, sitting on chair, legs up, looking at viewer, blush, detailed feet, pedicure, white background, simple background
 
-Input: "Office"
-Output: masterpiece, best quality, 1girl, solo, office lady, pencil skirt, black pantyhose, unbuttoned shirt, glasses, sitting on desk, crossing legs, heels, office interior, depth of field"""
+Input: "From Behind (Ass Focus)"
+Output: masterpiece, best quality, 1girl, solo, from behind, ass, panties, looking back, over shoulder, blush, suggestive, detailed skin, simple background, soft lighting"""
 
 # LoRA disabled by default - the LadyNuggets LoRA was causing quality issues
 # To re-enable, pass --lora flag when running factory.py
@@ -396,14 +396,19 @@ def get_ai_prompt(theme):
     # Ultimate fallback — rich Danbooru-style prompts per theme
     log('warning', "All AI providers failed. Using built-in prompt library.")
     theme_prompts = {
-        "Bedroom": "bedroom, white sheets, morning light, messy hair, stretching, tank top, panties, suggestive, blush",
-        "Beach": "beach, ocean, white sand, bikini, wet skin, lens flare, ponytail, smile, looking at viewer",
-        "Onsen": "onsen, steam, towel, wet hair, japanese bath, blushing, droplets, mystic fog, wooden bucket",
-        "Gym": "gym, sportswear, yoga pants, sports bra, sweat, mirror, ponytail, drinking water, fitness",
-        "Office": "office, pencil skirt, white blouse, unbuttoned, glasses, sitting on desk, black pantyhose, heels",
-        "Simple Background": "white background, studio lighting, high fashion, detailed face, looking at viewer, masterpiece",
-        "Poolside": "swimming pool, wet, lounge chair, sunglasses, cocktail, blue water, summer vibe",
-        "Lingerie": "lingerie, lace, silk, boudoir, dim lighting, seductive pose, bed, pillows",
+        "Bedroom (Lingerie)": "1girl, lingerie, sitting on bed, messy hair, stretching, tank top, panties, suggestive, blush, bedroom",
+        "Beach (Bikini)": "1girl, bikini, white sand, ocean, wet skin, lens flare, ponytail, smile, looking at viewer, beach",
+        "Onsen (Steam)": "1girl, onsen, steam, towel, wet hair, japanese bath, blushing, droplets, mystic fog, wooden bucket, naked",
+        "Simple Background (White)": "1girl, white background, studio lighting, high fashion, detailed face, looking at viewer, masterpiece, simple background",
+        "Simple Background (Black)": "1girl, black background, rim lighting, dramatic lighting, detailed face, looking at viewer, masterpiece, simple background",
+        "Feet Focus": "1girl, barefoot, soles, toes, sitting, legs up, looking at viewer, blush, detailed feet, pedicure",
+        "Chest Focus": "1girl, cleavage, large breasts, tight shirt, crop top, sweat, looking at viewer, blush, detailed skin",
+        "From Behind (Ass Focus)": "1girl, from behind, ass, panties, looking back, over shoulder, blush, suggestive, detailed skin",
+        "Dynamic Pose (Angle)": "1girl, dynamic angle, foreshortening, reaching out, jumping, floating hair, detailed anatomy, action pose",
+        "Wet Skin (Shower)": "1girl, shower, water droplets, wet skin, steam, tiled wall, looking at viewer, blush, wet hair",
+        "Sweaty (Gym)": "1girl, gym, sportswear, yoga pants, sports bra, sweat, mirror, ponytail, drinking water, fitness",
+        "Closeup (Face)": "1girl, extreme closeup, detailed eyes, detailed lips, makeup, eyelashes, looking at viewer, blush",
+        "Mirror Selfie": "1girl, holding phone, mirror selfie, bathroom, reflection, flash, cute pose, duck face",
     }
     fallback = theme_prompts.get(theme, f"{theme}, detailed outfit, scenic background, dramatic lighting, dynamic pose, cinematic composition")
     return fallback
@@ -710,12 +715,21 @@ def main():
     for i in range(args.count):
         print(f"\n{Colors.BOLD}[{i+1}/{args.count}]{Colors.END}")
         
-        # Select theme
-        theme = args.theme if args.theme else random.choice(themes)
-        log('info', f"Theme: {theme}")
+        # Select Pinup Scenario (formerly Theme)
+        # User requested: "ecchi, nsfw, feet focus, chest focus, from behind, dynamic poses"
+        pinup_scenarios = [
+            "Bedroom (Lingerie)", "Beach (Bikini)", "Onsen (Steam)", 
+            "Simple Background (White)", "Simple Background (Black)",
+            "Feet Focus", "Chest Focus", "From Behind (Ass Focus)", 
+            "Dynamic Pose (Angle)", "Wet Skin (Shower)", 
+            "Sweaty (Gym)", "Closeup (Face)", "Mirror Selfie"
+        ]
         
-        # Get AI-generated scene prompt
-        scene_prompt = get_ai_prompt(theme)
+        scenario = args.theme if args.theme else random.choice(pinup_scenarios)
+        log('info', f"Scenario: {scenario}")
+        
+        # Get AI-generated prompt for this scenario
+        scene_prompt = get_ai_prompt(scenario)
         
         # Build full prompt with BREAK sections (proven high-quality structure)
         artist_mix = random.choice(ARTIST_MIXES)
