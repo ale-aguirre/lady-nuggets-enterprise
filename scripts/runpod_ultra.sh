@@ -386,10 +386,16 @@ else
     fi
     
     if [ -d "$ADETAILER_DIR" ]; then
-        # Install dependencies
+        # Install dependencies — but DON'T break numpy/scikit-image!
+        # ultralytics pulls numpy 2.x which breaks skimage (and crashes Forge)
         pip install ultralytics 2>/dev/null || true
-        echo -e "   ${GREEN}✅ ADetailer installed! Server will restart to load it.${NC}"
-        NEED_SERVER_START=true
+        # Fix scikit-image to work with numpy 2.x
+        pip install -U scikit-image 2>/dev/null || true
+        echo -e "   ${GREEN}✅ ADetailer installed!${NC}"
+        echo -e "   ${YELLOW}   ℹ️  ADetailer will be active on next pod restart${NC}"
+        # NOTE: We do NOT set NEED_SERVER_START here!
+        # The running Forge server doesn't need to be restarted just for extensions.
+        # Extensions load on server startup, so they'll be active next time.
     else
         echo -e "   ${YELLOW}⚠️  ADetailer auto-install failed${NC}"
         echo -e "   ${YELLOW}   Try manual: pip install adetailer && cd $SD_DIR/extensions && git clone https://github.com/Bing-su/adetailer.git${NC}"
@@ -437,7 +443,7 @@ if [ "$SERVER_FOUND" = true ]; then
     # Server was found in Step 1 — use it as-is
     echo -e "   ${GREEN}✅ Server running at $REFORGE_API${NC}"
     
-elif [ "$NEED_SERVER_START" = true ] && [ "$IS_RUNPOD" = true ]; then
+elif [ "$SERVER_FOUND" = false ] && [ "$IS_RUNPOD" = true ]; then
     echo -e "   ${YELLOW}⚠️  No SD API detected. Attempting to start server...${NC}"
     
     # Diagnostic: show what's listening
@@ -514,7 +520,7 @@ elif [ "$NEED_SERVER_START" = true ] && [ "$IS_RUNPOD" = true ]; then
         ls -la "$SD_DIR"/*.py 2>/dev/null | head -5 | sed 's/^/      /' || echo "      (no python files found)"
     fi
     
-elif [ "$NEED_SERVER_START" = true ]; then
+elif [ "$SERVER_FOUND" = false ]; then
     echo -e "   ${RED}❌ No server running and cannot auto-start locally.${NC}"
     echo "      Please start your local SD server first, then run this script again."
     exit 1
