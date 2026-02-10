@@ -433,6 +433,39 @@ else
     echo -e "   ${YELLOW}ℹ️  LadyNuggets LoRA not found (character LoRA optional)${NC}"
 fi
 
+# --- Lazy Embeddings (Quality Boost for Illustrious) ---
+EMBEDDING_DIR="$SD_DIR/embeddings"
+mkdir -p "$EMBEDDING_DIR" 2>/dev/null || true
+echo -e "   ${CYAN}⬇️  Downloading Lazy Embeddings...${NC}"
+# lazypos v2
+if [ ! -f "$EMBEDDING_DIR/lazypos.safetensors" ] && [ -n "$CIVITAI_TOKEN" ]; then
+    curl -L -o "$EMBEDDING_DIR/lazypos.safetensors" \
+        "https://civitai.com/api/download/models/1268948?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null && \
+    echo -e "   ${GREEN}✅ lazypos downloaded${NC}"
+else
+    echo -e "   ${GREEN}✅ lazypos found${NC}"
+fi
+# lazyneg v2
+if [ ! -f "$EMBEDDING_DIR/lazyneg.safetensors" ] && [ -n "$CIVITAI_TOKEN" ]; then
+    curl -L -o "$EMBEDDING_DIR/lazyneg.safetensors" \
+        "https://civitai.com/api/download/models/1268949?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null && \
+    echo -e "   ${GREEN}✅ lazyneg downloaded${NC}"
+else
+    echo -e "   ${GREEN}✅ lazyneg found${NC}"
+fi
+
+
+# Perfect Eyes LoRA (User Request)
+PERFECT_EYES="$LORA_DIR/perfect_eyes.safetensors"
+if [ ! -f "$PERFECT_EYES" ]; then
+    echo -e "   ${CYAN}⬇️  Downloading Perfect Eyes LoRA...${NC}"
+    curl -L -o "$PERFECT_EYES" \
+        "https://civitai.com/api/download/models/2066663?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null && \
+    echo -e "   ${GREEN}✅ Perfect Eyes downloaded${NC}"
+else
+    echo -e "   ${GREEN}✅ Perfect Eyes LoRA found${NC}"
+fi
+
 # ==============================================================================
 # STEP 6: SERVER STARTUP (IF NEEDED)
 # ==============================================================================
@@ -610,31 +643,4 @@ if [ "$IS_RUNPOD" = true ]; then
 fi
 echo ""
 
-# --- Lazy Embeddings (Quality Boost for Illustrious) ---
-EMBEDDING_DIR="$SD_DIR/embeddings"
-mkdir -p "$EMBEDDING_DIR" 2>/dev/null || true
-echo -e "   \${CYAN}⬇️  Downloading Lazy Embeddings...${NC}"
-# lazypos v2
-if [ ! -f "$EMBEDDING_DIR/lazypos.safetensors" ] && [ -n "$CIVITAI_TOKEN" ]; then
-    curl -L -o "$EMBEDDING_DIR/lazypos.safetensors" \
-        "https://civitai.com/api/download/models/1268948?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null && \
-    echo -e "   \${GREEN}✅ lazypos downloaded${NC}"
-fi
-# lazyneg v2
-if [ ! -f "$EMBEDDING_DIR/lazyneg.safetensors" ] && [ -n "$CIVITAI_TOKEN" ]; then
-    curl -L -o "$EMBEDDING_DIR/lazyneg.safetensors" \
-        "https://civitai.com/api/download/models/1268949?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null && \
-    echo -e "   \${GREEN}✅ lazyneg downloaded${NC}"
-fi
 
-
-# Perfect Eyes LoRA (User Request)
-PERFECT_EYES="$LORA_DIR/perfect_eyes.safetensors"
-if [ ! -f "$PERFECT_EYES" ]; then
-    echo -e "   \${CYAN}⬇️  Downloading Perfect Eyes LoRA...${NC}"
-    curl -L -o "$PERFECT_EYES" \
-        "https://civitai.com/api/download/models/2066663?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null && \
-    echo -e "   \${GREEN}✅ Perfect Eyes downloaded${NC}"
-else
-    echo -e "   \${GREEN}✅ Perfect Eyes LoRA found${NC}"
-fi
