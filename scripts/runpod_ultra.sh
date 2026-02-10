@@ -191,10 +191,10 @@ fi
 echo -e "   ${GREEN}✅ Dependencies installed${NC}"
 
 # ==============================================================================
-# STEP 4: MODEL CHECK
+# STEP 4: MODEL CHECKPOINTS
 # ==============================================================================
 echo ""
-echo -e "${BLUE}🎨 [4/7] Checking Model Checkpoint...${NC}"
+echo -e "${BLUE}🎨 [4/7] Checking Model Checkpoints...${NC}"
 
 # CivitAI API Key (add to .env for automated downloads)
 CIVITAI_TOKEN="${CIVITAI_TOKEN:-}"
@@ -203,43 +203,52 @@ if [ "$SKIP_MODEL_DOWNLOAD" = true ]; then
     echo -e "   ${YELLOW}⏭️  Skipping model download (--no-model flag)${NC}"
 else
     MODEL_DIR="$SD_DIR/models/Stable-diffusion"
-    MODEL_NAME="oneObsession_v19Atypical.safetensors"
-    MODEL_PATH="$MODEL_DIR/$MODEL_NAME"
-
     mkdir -p "$MODEL_DIR" 2>/dev/null || true
 
-    if [ -f "$MODEL_PATH" ]; then
-        FILE_SIZE=$(stat -c%s "$MODEL_PATH" 2>/dev/null || stat -f%z "$MODEL_PATH" 2>/dev/null || echo "0")
-        if [ "$FILE_SIZE" -lt 1000000 ]; then
-            echo -e "   ${YELLOW}⚠️  Model file corrupted (${FILE_SIZE} bytes). Removing...${NC}"
-            rm -f "$MODEL_PATH"
+    # --- WAI-Illustrious (PRIMARY - best out-of-box anime quality) ---
+    WAI_MODEL="waiIllustriousSDXL_v160.safetensors"
+    WAI_PATH="$MODEL_DIR/$WAI_MODEL"
+    if [ -f "$WAI_PATH" ]; then
+        FILE_SIZE_MB=$(($(stat -c%s "$WAI_PATH" 2>/dev/null || stat -f%z "$WAI_PATH" 2>/dev/null || echo "0") / 1024 / 1024))
+        echo -e "   ${GREEN}✅ WAI-Illustrious v16: ${FILE_SIZE_MB}MB${NC}"
+    else
+        if [ -n "$CIVITAI_TOKEN" ]; then
+            echo -e "   ${CYAN}⬇️  Downloading WAI-Illustrious v16 (~7GB, best anime checkpoint)...${NC}"
+            curl -L -o "$WAI_PATH" \
+                "https://civitai.com/api/download/models/827184?type=Model&format=SafeTensor&token=${CIVITAI_TOKEN}" 2>/dev/null
+            FILE_SIZE=$(stat -c%s "$WAI_PATH" 2>/dev/null || stat -f%z "$WAI_PATH" 2>/dev/null || echo "0")
+            if [ "$FILE_SIZE" -gt 1000000000 ]; then
+                echo -e "   ${GREEN}✅ WAI-Illustrious downloaded!${NC}"
+            else
+                echo -e "   ${YELLOW}⚠️  WAI download may have failed (${FILE_SIZE} bytes)${NC}"
+                rm -f "$WAI_PATH" 2>/dev/null
+            fi
+        else
+            echo -e "   ${YELLOW}⚠️  CIVITAI_TOKEN not set. Cannot download WAI-Illustrious.${NC}"
         fi
     fi
 
-    if [ ! -f "$MODEL_PATH" ]; then
+    # --- OneObsession v19 (SECONDARY - good for 2.5D / color) ---
+    MODEL_NAME="oneObsession_v19Atypical.safetensors"
+    MODEL_PATH="$MODEL_DIR/$MODEL_NAME"
+    if [ -f "$MODEL_PATH" ]; then
+        FILE_SIZE_MB=$(($(stat -c%s "$MODEL_PATH" 2>/dev/null || stat -f%z "$MODEL_PATH" 2>/dev/null || echo "0") / 1024 / 1024))
+        echo -e "   ${GREEN}✅ OneObsession v19: ${FILE_SIZE_MB}MB${NC}"
+    else
         if [ -n "$CIVITAI_TOKEN" ]; then
             echo -e "   ${CYAN}⬇️  Downloading OneObsession v19 (~6GB)...${NC}"
-            # IMPORTANT: CivitAI requires token as query parameter, NOT header
             curl -L -o "$MODEL_PATH" \
                 "https://civitai.com/api/download/models/2443982?type=Model&format=SafeTensor&size=pruned&fp=fp16&token=${CIVITAI_TOKEN}"
-            
-            # Verify download
-            if [ -f "$MODEL_PATH" ]; then
-                FILE_SIZE=$(stat -c%s "$MODEL_PATH" 2>/dev/null || stat -f%z "$MODEL_PATH" 2>/dev/null || echo "0")
-                if [ "$FILE_SIZE" -gt 1000000000 ]; then
-                    echo -e "   ${GREEN}✅ Model downloaded successfully!${NC}"
-                else
-                    echo -e "   ${YELLOW}⚠️  Download may be incomplete. Will use available model.${NC}"
-                fi
+            FILE_SIZE=$(stat -c%s "$MODEL_PATH" 2>/dev/null || stat -f%z "$MODEL_PATH" 2>/dev/null || echo "0")
+            if [ "$FILE_SIZE" -gt 1000000000 ]; then
+                echo -e "   ${GREEN}✅ OneObsession downloaded!${NC}"
+            else
+                echo -e "   ${YELLOW}⚠️  OneObsession download may have failed${NC}"
+                rm -f "$MODEL_PATH" 2>/dev/null
             fi
         else
-            echo -e "   ${YELLOW}⚠️  CIVITAI_TOKEN not set. Cannot download model.${NC}"
-            echo -e "   ${CYAN}💡 To enable: export CIVITAI_TOKEN=your_api_key${NC}"
-            echo -e "   ${WHITE}   Will use any available model.${NC}"
+            echo -e "   ${YELLOW}   Can't download without CIVITAI_TOKEN${NC}"
         fi
-    else
-        FILE_SIZE_MB=$(($(stat -c%s "$MODEL_PATH" 2>/dev/null || stat -f%z "$MODEL_PATH" 2>/dev/null || echo "0") / 1024 / 1024))
-        echo -e "   ${GREEN}✅ Model exists: $MODEL_NAME (${FILE_SIZE_MB}MB)${NC}"
     fi
 fi
 
@@ -360,7 +369,7 @@ if [ "$NEED_SERVER_START" = true ]; then
         # Start server with API on port 7860 (bypasses nginx)
         REFORGE_API="http://127.0.0.1:7860"
         export REFORGE_API
-        nohup python3 launch.py --nowebui --api --listen --port 7860 --xformers > /workspace/reforge.log 2>&1 &
+        nohup python3 launch.py --nowebui --api --listen --port 7860 --xformers --medvram-sdxl > /workspace/reforge.log 2>&1 &
         
         if ! wait_for_server; then
             echo -e "   ${RED}❌ Server failed to start!${NC}"

@@ -341,26 +341,34 @@ def get_ai_prompt(theme):
     return f"{theme}, detailed background, dramatic lighting, dynamic pose"
 
 def get_model_info():
-    """Get current model info from server"""
+    """Get current model info from server. Prioritizes WAI > OneObsession > anime."""
     try:
         resp = requests.get(f"{REFORGE_API}/sdapi/v1/sd-models", timeout=5)
         if resp.status_code == 200:
             models = resp.json()
-            # Find our preferred model
+            # Priority 1: WAI-Illustrious (best anime quality)
             for m in models:
-                if 'oneobsession' in m['title'].lower():
+                if 'wai' in m['title'].lower() and 'illustrious' in m['title'].lower():
                     return m['title']
-                if 'obsession' in m['title'].lower():
+                if 'waiillustrious' in m['title'].lower():
                     return m['title']
-            # Fallback to first anime-ish model
+            # Priority 2: OneObsession (good 2.5D)
             for m in models:
-                if any(x in m['title'].lower() for x in ['anime', 'manga', 'pony']):
+                if 'oneobsession' in m['title'].lower() or 'obsession' in m['title'].lower():
+                    return m['title']
+            # Priority 3: Any Illustrious-based
+            for m in models:
+                if 'illustrious' in m['title'].lower():
+                    return m['title']
+            # Priority 4: Any anime-ish model
+            for m in models:
+                if any(x in m['title'].lower() for x in ['anime', 'manga', 'noob']):
                     return m['title']
             # Last resort: first model
             return models[0]['title'] if models else None
     except:
         pass
-    return "oneObsession_v19Atypical.safetensors"
+    return "waiIllustriousSDXL_v160.safetensors"
 
 def log_server_state():
     """Log current server inventory"""
@@ -400,18 +408,25 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=1.5, no_h
     """
     log('gen', f"Starting generation with model: {model_name}")
     
+    # Detect model type for optimal params
+    is_wai = 'wai' in model_name.lower()
+    is_oneobs = 'obsession' in model_name.lower()
+    
+    # WAI: lower denoise (0.45), OneObsession: higher denoise (0.7)
+    hr_denoise = 0.45 if is_wai else 0.7
+    
     # === SETTINGS MATCHING PROVEN HIGH-QUALITY PROMPTS ===
     payload = {
         "prompt": prompt,
         "negative_prompt": negative_prompt,
         
-        # Generation settings (from reference prompts)
-        "steps": 20,                     # Reference uses 20 steps
-        "cfg_scale": 5,                  # Reference uses CFG 5
-        "width": 832,                    # Portrait: 832x1216
+        # Generation settings (proven optimal for Illustrious family)
+        "steps": 20,
+        "cfg_scale": 5,
+        "width": 832,
         "height": 1216,
-        "sampler_name": "Euler a",       # Same as reference
-        "scheduler": "Karras",           # Reference uses Karras schedule
+        "sampler_name": "Euler a",
+        "scheduler": "Karras",
         "batch_size": 1,
         
         "override_settings": {
@@ -420,20 +435,20 @@ def generate_image(prompt, negative_prompt, model_name, upscale_factor=1.5, no_h
         },
     }
     
-    # Hires Fix (matching reference: denoise 0.7, R-ESRGAN)
+    # Hires Fix
     use_hires = not no_hires and upscale_factor > 1.0
     if use_hires:
         payload.update({
             "enable_hr": True,
             "hr_scale": upscale_factor,
             "hr_upscaler": "R-ESRGAN 4x+ Anime6B",
-            "denoising_strength": 0.7,            # Reference uses 0.7 (not 0.35!)
+            "denoising_strength": hr_denoise,
             "hr_second_pass_steps": 15,
-            "hr_cfg_scale": 5,                    # Reference sets hires CFG too
+            "hr_cfg_scale": 5,
         })
         final_w = int(832 * upscale_factor)
         final_h = int(1216 * upscale_factor)
-        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h} (R-ESRGAN + Karras)")
+        log('info', f"Hires Fix: {upscale_factor}x → {final_w}x{final_h} (denoise {hr_denoise})")
     else:
         payload["enable_hr"] = False
         log('info', "Hires Fix: DISABLED (base 832x1216)")
@@ -617,11 +632,19 @@ def main():
         # Get AI-generated scene prompt
         scene_prompt = get_ai_prompt(theme)
         
-        # Build full prompt: quality + artists + character + scene + suffix + lora
+        # Build full prompt with BREAK sections (proven high-quality structure)
+        # Section 1: Artists + Quality prefix
+        # Section 2: Character + Scene  
+        # Section 3: Quality suffix + LoRAs
         artist_mix = random.choice(ARTIST_MIXES)
-        full_prompt = f"{QUALITY_PREFIX}, {artist_mix}, {OC_CHARACTER}, {scene_prompt}, {QUALITY_SUFFIX}"
+        
+        section1 = f"{artist_mix},\n{QUALITY_PREFIX}"
+        section2 = f"{OC_CHARACTER}, {scene_prompt}"
+        section3 = f"{QUALITY_SUFFIX}"
         if lora_block:
-            full_prompt += f", {lora_block}"
+            section3 += f", {lora_block}"
+        
+        full_prompt = f"{section1},\nBREAK\n{section2},\nBREAK\n{section3}"
         
         log('info', f"Artists: {artist_mix}")
         
