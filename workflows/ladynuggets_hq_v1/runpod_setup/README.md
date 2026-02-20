@@ -1,5 +1,19 @@
 # Runpod Pod Setup (Comfy Anime HQ)
 
+## Quick Start (recomendado)
+```bash
+cd /workspace/lady-nuggets-enterprise/workflows/ladynuggets_hq_v1/runpod_setup
+git pull
+CIVITAI_TOKEN=TU_TOKEN bash runpod_master.sh all
+```
+
+Comandos individuales:
+```bash
+bash runpod_master.sh init
+CIVITAI_TOKEN=TU_TOKEN bash runpod_master.sh models
+bash runpod_master.sh verify
+```
+
 ## 1) En Runpod UI (Pods)
 - GPU: **RTX 4090 (24GB)** (si no hay, usar L40S)
 - Template (ID recomendado): **`runpod-comfy`** (`Runpod ComfyUI`)
@@ -22,6 +36,12 @@ cp runpod_setup/models.env.example runpod_setup/models.env
 # Solo completa CIVITAI_TOKEN (las URLs base ya vienen preconfiguradas)
 bash runpod_setup/download_models.sh runpod_setup/models.env
 bash runpod_setup/verify_models.sh
+```
+
+Ahora equivalente con script maestro:
+```bash
+cd /workspace/lady-nuggets-enterprise/workflows/ladynuggets_hq_v1/runpod_setup
+CIVITAI_TOKEN=TU_TOKEN bash runpod_master.sh all
 ```
 
 ## 3) Conectar Nuggets al Comfy Pod
