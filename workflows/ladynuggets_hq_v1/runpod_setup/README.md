@@ -11,6 +11,7 @@ Comandos individuales:
 ```bash
 bash runpod_master.sh init
 CIVITAI_TOKEN=TU_TOKEN bash runpod_master.sh models
+bash runpod_master.sh cleanup
 bash runpod_master.sh verify
 ```
 

@@ -20,6 +20,7 @@ Commands:
   init      Install deps + create Comfy model folders
   models    Create models.env (if missing), inject CIVITAI_TOKEN if provided, download models
   verify    Verify downloaded model files
+  cleanup   Remove duplicate model files (*.1, *.2...) keeping canonical names
   all       init + models + verify
 
 Optional env:
@@ -78,7 +79,37 @@ cmd_verify() {
   bash "${ROOT_DIR}/verify_models.sh"
 }
 
+cmd_cleanup() {
+  local comfy_root="/workspace/ComfyUI/models"
+  local dir
+  for dir in checkpoints vae upscale_models embeddings loras; do
+    local base="${comfy_root}/${dir}"
+    [[ -d "${base}" ]] || continue
+    shopt -s nullglob
+    for dup in "${base}"/*.[0-9]*.safetensors "${base}"/*.[0-9]*.pth; do
+      [[ -f "${dup}" ]] || continue
+      local original
+      original="$(echo "${dup}" | sed -E 's/\.([0-9]+)(\.[^.]+)$/\2/')"
+      if [[ -f "${original}" ]]; then
+        echo "REMOVE dup -> ${dup}"
+        rm -f "${dup}"
+      else
+        echo "KEEP as canonical missing original -> ${dup}"
+      fi
+    done
+    shopt -u nullglob
+  done
+  echo "OK cleanup"
+}
+
 main() {
+  # Avoid concurrent runs that create duplicate files.
+  exec 9>/tmp/runpod_master.lock
+  flock -n 9 || {
+    echo "Another runpod_master.sh process is running. Wait and retry."
+    exit 1
+  }
+
   local cmd="${1:-}"
   case "${cmd}" in
     init)
@@ -89,6 +120,9 @@ main() {
       ;;
     verify)
       cmd_verify
+      ;;
+    cleanup)
+      cmd_cleanup
       ;;
     all)
       cmd_init

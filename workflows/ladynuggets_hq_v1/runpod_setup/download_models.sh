@@ -44,10 +44,10 @@ fetch() {
         final_url="${url}?token=${CIVITAI_TOKEN}"
       fi
     fi
-    aria2c --allow-overwrite=true -x 8 -s 8 -k 1M -o "$(basename "$out")" -d "$(dirname "$out")" "$final_url"
+    aria2c --allow-overwrite=true --auto-file-renaming=false -x 8 -s 8 -k 1M -o "$(basename "$out")" -d "$(dirname "$out")" "$final_url"
   else
     echo "Descargando -> $out"
-    aria2c --allow-overwrite=true -x 8 -s 8 -k 1M -o "$(basename "$out")" -d "$(dirname "$out")" "$url"
+    aria2c --allow-overwrite=true --auto-file-renaming=false -x 8 -s 8 -k 1M -o "$(basename "$out")" -d "$(dirname "$out")" "$url"
   fi
 }
 
