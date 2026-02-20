@@ -32,7 +32,22 @@ def main():
     out_dir = root.parent / "test_output"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    comfy = os.environ.get("COMFY_BASE_URL", "http://127.0.0.1:8188").rstrip("/")
+    comfy_env = os.environ.get("COMFY_BASE_URL", "").strip()
+    comfy_candidates = [comfy_env] if comfy_env else ["http://127.0.0.1:8188", "http://127.0.0.1:3000"]
+    comfy = None
+    for c in comfy_candidates:
+      if not c:
+          continue
+      c = c.rstrip("/")
+      try:
+          _ = http_json("GET", f"{c}/object_info")
+          comfy = c
+          break
+      except Exception:
+          continue
+    if comfy is None:
+      print("[test] no reachable Comfy API. Set COMFY_BASE_URL explicitly.")
+      sys.exit(4)
     prompt_text = os.environ.get(
         "TEST_PROMPT",
         "masterpiece, best quality, ultra detailed anime style, adult woman inspired by sailor moon, "
