@@ -21,6 +21,7 @@ Commands:
   models    Create models.env (if missing), inject CIVITAI_TOKEN if provided, download models
   verify    Verify downloaded model files
   cleanup   Remove duplicate model files (*.1, *.2...) keeping canonical names
+  test      Run one real Comfy generation and save output image
   all       init + models + verify
 
 Optional env:
@@ -79,6 +80,10 @@ cmd_verify() {
   bash "${ROOT_DIR}/verify_models.sh"
 }
 
+cmd_test() {
+  python3 "${ROOT_DIR}/run_comfy_test.py"
+}
+
 cmd_cleanup() {
   local comfy_root="/workspace/ComfyUI/models"
   local dir
@@ -120,6 +125,9 @@ main() {
       ;;
     verify)
       cmd_verify
+      ;;
+    test)
+      cmd_test
       ;;
     cleanup)
       cmd_cleanup

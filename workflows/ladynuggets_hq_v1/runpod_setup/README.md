@@ -13,6 +13,12 @@ bash runpod_master.sh init
 CIVITAI_TOKEN=TU_TOKEN bash runpod_master.sh models
 bash runpod_master.sh cleanup
 bash runpod_master.sh verify
+bash runpod_master.sh test
+```
+
+Test con prompt custom:
+```bash
+TEST_PROMPT="adult anime woman inspired by sailor moon, beach sunset, cinematic lighting" bash runpod_master.sh test
 ```
 
 ## 1) En Runpod UI (Pods)

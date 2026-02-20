@@ -1,7 +1,7 @@
 {
   "1": {
     "inputs": {
-      "ckpt_name": "waiIllustriousSDXL_v160.safetensors"
+      "ckpt_name": "hassakuXLIllustrious_v34.safetensors"
     },
     "class_type": "CheckpointLoaderSimple",
     "_meta": { "title": "Load Checkpoint" }
@@ -10,7 +10,7 @@
     "inputs": {
       "width": 1024,
       "height": 1536,
-      "batch_size": 2
+      "batch_size": 1
     },
     "class_type": "EmptyLatentImage",
     "_meta": { "title": "Latent Base" }
@@ -89,7 +89,7 @@
   },
   "10": {
     "inputs": {
-      "model_name": "4x-UltraSharp.pth"
+      "model_name": "RealESRGAN_x4plus_anime_6B.pth"
     },
     "class_type": "UpscaleModelLoader",
     "_meta": { "title": "Load Upscaler" }
