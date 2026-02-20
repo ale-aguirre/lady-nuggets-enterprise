@@ -1,0 +1,88 @@
+{
+  "1": {
+    "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load Checkpoint" }
+  },
+  "2": {
+    "inputs": { "width": 1024, "height": 1536, "batch_size": 1 },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "Base Latent" }
+  },
+  "3": {
+    "inputs": {
+      "text": "masterpiece, best quality, amazing quality, very aesthetic, depth of field, highres, source_anime, cinematic lighting, soft lighting, rim lighting, dynamic angle, close-up, portrait, 1girl, solo, sailor moon style, school uniform, detailed skin, blush, looking at viewer, beach, sunset, colorful depth, high contrast",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive" }
+  },
+  "4": {
+    "inputs": {
+      "text": "low quality, worst quality, blurry, lowres, jpeg artifacts, bad anatomy, bad_hands, bad_feet, deformed anatomy, extra fingers, extra digit, watermark, text, logo, signature, censored",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative" }
+  },
+  "5": {
+    "inputs": {
+      "seed": 337722991,
+      "steps": 30,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": ["1", 0],
+      "positive": ["3", 0],
+      "negative": ["4", 0],
+      "latent_image": ["2", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "Stage 1 Base" }
+  },
+  "6": {
+    "inputs": {
+      "samples": ["5", 0],
+      "upscale_method": "nearest-exact",
+      "scale_by": 2
+    },
+    "class_type": "LatentUpscaleBy",
+    "_meta": { "title": "Latent Upscale x2" }
+  },
+  "7": {
+    "inputs": {
+      "seed": 337722992,
+      "steps": 14,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.28,
+      "model": ["1", 0],
+      "positive": ["3", 0],
+      "negative": ["4", 0],
+      "latent_image": ["6", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "Stage 2 Hires Fix" }
+  },
+  "8": {
+    "inputs": { "samples": ["7", 0], "vae": ["1", 2] },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "Decode" }
+  },
+  "9": {
+    "inputs": {
+      "image": ["8", 0],
+      "upscale_method": "lanczos",
+      "scale_by": 1.08
+    },
+    "class_type": "ImageScaleBy",
+    "_meta": { "title": "Image Upscale 4K Target" }
+  },
+  "10": {
+    "inputs": { "filename_prefix": "LadyNuggets_Flux4K_v1", "images": ["9", 0] },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save 4K" }
+  }
+}

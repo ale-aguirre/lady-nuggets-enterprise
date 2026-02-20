@@ -6,4 +6,6 @@ content/curated/
 *.zip
 .env
 config/.env
+workflows/ladynuggets_hq_v1/runpod_setup/models.env
+config/deviantart_tokens.json
 backups/

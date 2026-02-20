@@ -1,0 +1,37 @@
+{
+  "pipelineId": "lady-exclusives-hq-v1",
+  "pipelineName": "LadyNuggets HQ Exclusives v1",
+  "pipelineDescription": "Pipeline nuevo aislado: investigacion->clasificacion->copy->stash draft DA con workflow Comfy HQ v1.",
+  "enabled": false,
+  "kind": "exclusive",
+  "rawDir": "/Users/alexisaguirre/Downloads/Alexis/Proyectos/lady-nuggets-enterprise/content/raw",
+  "enterpriseDir": "/Users/alexisaguirre/Downloads/Alexis/Proyectos/lady-nuggets-enterprise",
+  "daEnvPath": "/Users/alexisaguirre/Downloads/Alexis/Proyectos/lady-nuggets-enterprise/config/.env",
+  "daTokensPath": "/Users/alexisaguirre/Downloads/Alexis/Proyectos/lady-nuggets-enterprise/config/deviantart_tokens.json",
+  "mode": "stash",
+  "minQuality": 7,
+  "exclusivePriceUsd": 10,
+  "targets": {
+    "deviantart": true,
+    "x": false,
+    "instagram": false,
+    "discord": false
+  },
+  "intervalMinutes": 120,
+  "batchMode": "single",
+  "batchCount": 1,
+  "hqWorkflow": {
+    "engine": "comfyui",
+    "workflowPath": "/Users/alexisaguirre/Downloads/Alexis/Proyectos/lady-nuggets-enterprise/workflows/ladynuggets_hq_v1/comfy_hq_v1_api.json",
+    "runpod": {
+      "enabled": true,
+      "endpointEnv": "RUNPOD_ENDPOINT_ID",
+      "apiKeyEnv": "RUNPOD_API_KEY"
+    },
+    "modelPriority": [
+      "Hassaku XL (Illustrious) v3.4",
+      "Prefect Illustrious XL v7.0",
+      "iLustMix v10"
+    ]
+  }
+}

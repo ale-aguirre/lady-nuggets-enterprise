@@ -1,0 +1,79 @@
+{
+  "1": {
+    "inputs": { "ckpt_name": "flux1-dev-fp8.safetensors" },
+    "class_type": "CheckpointLoaderSimple",
+    "_meta": { "title": "Load Checkpoint" }
+  },
+  "2": {
+    "inputs": { "width": 1024, "height": 1536, "batch_size": 1 },
+    "class_type": "EmptyLatentImage",
+    "_meta": { "title": "Base Latent" }
+  },
+  "3": {
+    "inputs": {
+      "text": "masterpiece, best quality, ultra detailed, source_anime, sailor moon, tsukino usagi, blonde twin tails, blue eyes, magical girl outfit, moon tiara, clean lineart, soft cinematic light, detailed face, detailed eyes, smooth shading, high contrast, elegant composition",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Positive" }
+  },
+  "4": {
+    "inputs": {
+      "text": "worst quality, low quality, lowres, pixelated, jpeg artifacts, blurry, noisy, bad anatomy, extra fingers, deformed hands, text, logo, watermark, signature",
+      "clip": ["1", 1]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative" }
+  },
+  "5": {
+    "inputs": {
+      "seed": 11827365,
+      "steps": 36,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 1,
+      "model": ["1", 0],
+      "positive": ["3", 0],
+      "negative": ["4", 0],
+      "latent_image": ["2", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "Stage 1 Base" }
+  },
+  "6": {
+    "inputs": {
+      "samples": ["5", 0],
+      "upscale_method": "bicubic",
+      "scale_by": 1.5
+    },
+    "class_type": "LatentUpscaleBy",
+    "_meta": { "title": "Latent Upscale x1.5 (clean)" }
+  },
+  "7": {
+    "inputs": {
+      "seed": 11827366,
+      "steps": 14,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "normal",
+      "denoise": 0.20,
+      "model": ["1", 0],
+      "positive": ["3", 0],
+      "negative": ["4", 0],
+      "latent_image": ["6", 0]
+    },
+    "class_type": "KSampler",
+    "_meta": { "title": "Stage 2 Hires Fix" }
+  },
+  "8": {
+    "inputs": { "samples": ["7", 0], "vae": ["1", 2] },
+    "class_type": "VAEDecode",
+    "_meta": { "title": "Decode" }
+  },
+  "9": {
+    "inputs": { "filename_prefix": "LadyNuggets_FluxAnimeClean_v2", "images": ["8", 0] },
+    "class_type": "SaveImage",
+    "_meta": { "title": "Save" }
+  }
+}
