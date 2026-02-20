@@ -23,6 +23,17 @@ fetch() {
 
   mkdir -p "$(dirname "$out")"
 
+  if [[ -f "$out" ]]; then
+    echo "SKIP ya existe -> $out"
+    return 0
+  fi
+
+  # Self-heal known broken URL from previous config.
+  if [[ "$url" == "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/RealESRGAN_x4plus_anime_6B.pth" ]]; then
+    echo "Fix URL rota de Anime6B -> usando v0.2.2.4"
+    url="https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth"
+  fi
+
   if [[ -n "${CIVITAI_TOKEN:-}" && "$url" == *"civitai.com"* ]]; then
     echo "Descargando (Civitai token query) -> $out"
     local final_url="$url"
@@ -33,10 +44,10 @@ fetch() {
         final_url="${url}?token=${CIVITAI_TOKEN}"
       fi
     fi
-    aria2c -x 8 -s 8 -k 1M -o "$(basename "$out")" -d "$(dirname "$out")" "$final_url"
+    aria2c --allow-overwrite=true -x 8 -s 8 -k 1M -o "$(basename "$out")" -d "$(dirname "$out")" "$final_url"
   else
     echo "Descargando -> $out"
-    aria2c -x 8 -s 8 -k 1M -o "$(basename "$out")" -d "$(dirname "$out")" "$url"
+    aria2c --allow-overwrite=true -x 8 -s 8 -k 1M -o "$(basename "$out")" -d "$(dirname "$out")" "$url"
   fi
 }
 

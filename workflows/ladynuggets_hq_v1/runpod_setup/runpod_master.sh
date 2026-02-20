@@ -33,6 +33,12 @@ ensure_env_file() {
   fi
 }
 
+sanitize_env_file() {
+  # Fix legacy values from older setup iterations.
+  sed -i 's|^UPSCALER_NAME=.*|UPSCALER_NAME=RealESRGAN_x4plus_anime_6B.pth|' "${ENV_FILE}" || true
+  sed -i 's|^UPSCALER_URL=https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.5.0/RealESRGAN_x4plus_anime_6B.pth|UPSCALER_URL=https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth|' "${ENV_FILE}" || true
+}
+
 inject_token_if_present() {
   if [[ -n "${CIVITAI_TOKEN:-}" ]]; then
     python3 - <<'PY' "${ENV_FILE}" "${CIVITAI_TOKEN}"
@@ -63,6 +69,7 @@ cmd_init() {
 
 cmd_models() {
   ensure_env_file
+  sanitize_env_file
   inject_token_if_present
   bash "${ROOT_DIR}/download_models.sh" "${ENV_FILE}"
 }
