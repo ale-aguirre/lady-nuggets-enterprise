@@ -6,6 +6,7 @@ import sys
 import time
 import urllib.parse
 import urllib.request
+from urllib.error import HTTPError
 from pathlib import Path
 
 
@@ -67,7 +68,57 @@ def main():
     print(f"[test] comfy={comfy}")
     print(f"[test] seed={seed}")
 
-    created = http_json("POST", f"{comfy}/prompt", {"prompt": wf})
+    def try_submit(prompt_wf, label: str):
+        try:
+            created_local = http_json("POST", f"{comfy}/prompt", {"prompt": prompt_wf})
+            print(f"[test] submit ok ({label})")
+            return created_local
+        except HTTPError as e:
+            body = ""
+            try:
+                body = e.read().decode("utf-8", errors="ignore")
+            except Exception:
+                pass
+            print(f"[test] submit failed ({label}) -> HTTP {e.code}")
+            if body:
+                print(f"[test] error body: {body[:1200]}")
+            return None
+
+    created = try_submit(wf, "hq_workflow")
+    if created is None:
+        print("[test] fallback -> basic workflow")
+        basic_neg = (
+            "worst quality, low quality, blurry, bad anatomy, bad hands, extra fingers, "
+            "watermark, text, logo, child, loli"
+        )
+        wf = {
+            "1": {"inputs": {"ckpt_name": "hassakuXLIllustrious_v34.safetensors"}, "class_type": "CheckpointLoaderSimple"},
+            "2": {"inputs": {"width": 832, "height": 1216, "batch_size": 1}, "class_type": "EmptyLatentImage"},
+            "3": {"inputs": {"text": prompt_text, "clip": ["1", 1]}, "class_type": "CLIPTextEncode"},
+            "4": {"inputs": {"text": basic_neg, "clip": ["1", 1]}, "class_type": "CLIPTextEncode"},
+            "5": {
+                "inputs": {
+                    "seed": seed,
+                    "steps": 28,
+                    "cfg": 6.0,
+                    "sampler_name": "euler",
+                    "scheduler": "normal",
+                    "denoise": 1.0,
+                    "model": ["1", 0],
+                    "positive": ["3", 0],
+                    "negative": ["4", 0],
+                    "latent_image": ["2", 0],
+                },
+                "class_type": "KSampler",
+            },
+            "6": {"inputs": {"samples": ["5", 0], "vae": ["1", 2]}, "class_type": "VAEDecode"},
+            "7": {"inputs": {"filename_prefix": "LadyNuggets_HQ_v1_test", "images": ["6", 0]}, "class_type": "SaveImage"},
+        }
+        created = try_submit(wf, "basic_workflow")
+        if created is None:
+            print("[test] both workflows failed")
+            sys.exit(5)
+
     prompt_id = created["prompt_id"]
     print(f"[test] prompt_id={prompt_id}")
 
