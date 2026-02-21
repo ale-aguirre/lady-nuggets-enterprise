@@ -51,9 +51,10 @@ def main():
       sys.exit(4)
     prompt_text = os.environ.get(
         "TEST_PROMPT",
-        "masterpiece, best quality, ultra detailed anime style, adult woman inspired by sailor moon, "
-        "blonde twin tails, sailor uniform redesign, beach sunset, dynamic pose, cinematic lighting, "
-        "sharp eyes, high contrast, clean lineart, no child, mature proportions",
+        "masterpiece, best quality, absurdres, anime illustration, adult woman, "
+        "inspired by sailor moon, blonde twintails, elegant sailor outfit, glamour pose, "
+        "volumetric cinematic sunset light, detailed eyes, detailed skin, clean lineart, "
+        "sharp focus, high detail background, mature proportions, sexy but tasteful",
     )
     seed = int(os.environ.get("TEST_SEED", str(random.randint(1, 2_147_483_647))))
 
@@ -121,7 +122,7 @@ def main():
         print("[test] fallback -> basic workflow")
         basic_neg = (
             "worst quality, low quality, blurry, bad anatomy, bad hands, extra fingers, "
-            "watermark, text, logo, child, loli"
+            "watermark, text, logo, child, loli, deformed, jpeg artifacts"
         )
         wf = {
             "1": {"inputs": {"ckpt_name": target_ckpt}, "class_type": "CheckpointLoaderSimple"},

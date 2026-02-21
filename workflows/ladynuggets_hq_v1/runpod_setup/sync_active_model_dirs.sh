@@ -50,12 +50,14 @@ for CKPT_DIR in "${CKPT_DIRS[@]}"; do
   copy_safe "$SRC_UPS"  "${UPS_DIR}/RealESRGAN_x4plus_anime_6B.pth"
 
   # Some Comfy templates expose a fixed checkpoint list (e.g. sd_xl_base_1.0.*).
-  # To use Hassaku without fighting the allow-list, alias the allowed filename to Hassaku.
-  if [[ -f "${CKPT_DIR}/hassakuXLIllustrious_v34.safetensors" && -f "${CKPT_DIR}/sd_xl_base_1.0.safetensors" ]]; then
-    if [[ ! -f "${CKPT_DIR}/sd_xl_base_1.0.safetensors.orig_hqv1" ]]; then
-      mv "${CKPT_DIR}/sd_xl_base_1.0.safetensors" "${CKPT_DIR}/sd_xl_base_1.0.safetensors.orig_hqv1"
-    else
-      rm -f "${CKPT_DIR}/sd_xl_base_1.0.safetensors"
+  # Force allowed filename to point to Hassaku so API can load anime model without changing allow-list.
+  if [[ -f "${CKPT_DIR}/hassakuXLIllustrious_v34.safetensors" ]]; then
+    if [[ -e "${CKPT_DIR}/sd_xl_base_1.0.safetensors" && ! -L "${CKPT_DIR}/sd_xl_base_1.0.safetensors" ]]; then
+      if [[ ! -e "${CKPT_DIR}/sd_xl_base_1.0.safetensors.orig_hqv1" ]]; then
+        mv "${CKPT_DIR}/sd_xl_base_1.0.safetensors" "${CKPT_DIR}/sd_xl_base_1.0.safetensors.orig_hqv1"
+      else
+        rm -f "${CKPT_DIR}/sd_xl_base_1.0.safetensors"
+      fi
     fi
     ln -sfn "hassakuXLIllustrious_v34.safetensors" "${CKPT_DIR}/sd_xl_base_1.0.safetensors"
     echo "ALIAS sd_xl_base_1.0.safetensors -> hassakuXLIllustrious_v34.safetensors"
