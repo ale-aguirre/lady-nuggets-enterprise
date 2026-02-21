@@ -10,6 +10,21 @@ SRC_UPS="${SRC_ROOT}/upscale_models/RealESRGAN_x4plus_anime_6B.pth"
 [[ -f "$SRC_VAE"  ]] || { echo "Falta VAE fuente: $SRC_VAE"; exit 1; }
 [[ -f "$SRC_UPS"  ]] || { echo "Falta upscaler fuente: $SRC_UPS"; exit 1; }
 
+copy_safe() {
+  local src="$1"
+  local dst="$2"
+  local src_real dst_real
+  src_real="$(realpath "$src")"
+  if [[ -e "$dst" ]]; then
+    dst_real="$(realpath "$dst")"
+    if [[ "$src_real" == "$dst_real" ]]; then
+      echo "SKIP same file -> $dst"
+      return 0
+    fi
+  fi
+  cp -f "$src" "$dst"
+}
+
 mapfile -t CKPT_DIRS < <(
   {
     find /workspace -type d -path '*/models/checkpoints' 2>/dev/null || true
@@ -30,9 +45,9 @@ for CKPT_DIR in "${CKPT_DIRS[@]}"; do
   UPS_DIR="${MODELS_ROOT}/upscale_models"
   mkdir -p "$CKPT_DIR" "$VAE_DIR" "$UPS_DIR"
 
-  cp -f "$SRC_CKPT" "${CKPT_DIR}/hassakuXLIllustrious_v34.safetensors"
-  cp -f "$SRC_VAE"  "${VAE_DIR}/sdxl_vaeFix.safetensors"
-  cp -f "$SRC_UPS"  "${UPS_DIR}/RealESRGAN_x4plus_anime_6B.pth"
+  copy_safe "$SRC_CKPT" "${CKPT_DIR}/hassakuXLIllustrious_v34.safetensors"
+  copy_safe "$SRC_VAE"  "${VAE_DIR}/sdxl_vaeFix.safetensors"
+  copy_safe "$SRC_UPS"  "${UPS_DIR}/RealESRGAN_x4plus_anime_6B.pth"
 
   echo "SYNC target:"
   echo "  CKPT -> ${CKPT_DIR}"
