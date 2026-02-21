@@ -2,46 +2,42 @@
 set -euo pipefail
 
 SRC_ROOT="/workspace/ComfyUI/models"
+SRC_CKPT="${SRC_ROOT}/checkpoints/hassakuXLIllustrious_v34.safetensors"
+SRC_VAE="${SRC_ROOT}/vae/sdxl_vaeFix.safetensors"
+SRC_UPS="${SRC_ROOT}/upscale_models/RealESRGAN_x4plus_anime_6B.pth"
 
-find_active_ckpt_dir() {
-  local p=""
-  for name in sd_xl_base_1.0.safetensors flux1-schnell-fp8.safetensors v1-5-pruned-emaonly.safetensors; do
-    p="$(find /workspace -type f -name "$name" 2>/dev/null | head -n1 || true)"
-    if [[ -n "$p" ]]; then
-      dirname "$p"
-      return 0
-    fi
-  done
-  return 1
-}
+[[ -f "$SRC_CKPT" ]] || { echo "Falta checkpoint fuente: $SRC_CKPT"; exit 1; }
+[[ -f "$SRC_VAE"  ]] || { echo "Falta VAE fuente: $SRC_VAE"; exit 1; }
+[[ -f "$SRC_UPS"  ]] || { echo "Falta upscaler fuente: $SRC_UPS"; exit 1; }
 
-ACTIVE_CKPT_DIR="$(find_active_ckpt_dir || true)"
-if [[ -z "${ACTIVE_CKPT_DIR:-}" ]]; then
-  echo "No pude detectar directorio activo de checkpoints."
+mapfile -t CKPT_DIRS < <(
+  {
+    find /workspace -type d -path '*/models/checkpoints' 2>/dev/null || true
+    # fallback por si el template usa esta ruta y todavia no existe
+    echo "/workspace/ComfyUI/models/checkpoints"
+  } | awk 'NF' | sort -u
+)
+
+if [[ "${#CKPT_DIRS[@]}" -eq 0 ]]; then
+  echo "No encontré dirs de checkpoints."
   exit 1
 fi
 
-ACTIVE_MODELS_ROOT="$(cd "${ACTIVE_CKPT_DIR}/.." && pwd)"
-ACTIVE_VAE_DIR="${ACTIVE_MODELS_ROOT}/vae"
-ACTIVE_UPS_DIR="${ACTIVE_MODELS_ROOT}/upscale_models"
+for CKPT_DIR in "${CKPT_DIRS[@]}"; do
+  MODELS_ROOT="$(cd "${CKPT_DIR}/.." 2>/dev/null || true; pwd)"
+  [[ -n "${MODELS_ROOT:-}" ]] || continue
+  VAE_DIR="${MODELS_ROOT}/vae"
+  UPS_DIR="${MODELS_ROOT}/upscale_models"
+  mkdir -p "$CKPT_DIR" "$VAE_DIR" "$UPS_DIR"
 
-mkdir -p "$ACTIVE_CKPT_DIR" "$ACTIVE_VAE_DIR" "$ACTIVE_UPS_DIR"
+  cp -f "$SRC_CKPT" "${CKPT_DIR}/hassakuXLIllustrious_v34.safetensors"
+  cp -f "$SRC_VAE"  "${VAE_DIR}/sdxl_vaeFix.safetensors"
+  cp -f "$SRC_UPS"  "${UPS_DIR}/RealESRGAN_x4plus_anime_6B.pth"
 
-copy_if_exists() {
-  local src="$1"
-  local dst="$2"
-  if [[ -f "$src" ]]; then
-    cp -f "$src" "$dst"
-    echo "SYNC $(basename "$src") -> $dst"
-  fi
-}
+  echo "SYNC target:"
+  echo "  CKPT -> ${CKPT_DIR}"
+  echo "  VAE  -> ${VAE_DIR}"
+  echo "  UPS  -> ${UPS_DIR}"
+done
 
-copy_if_exists "${SRC_ROOT}/checkpoints/hassakuXLIllustrious_v34.safetensors" "${ACTIVE_CKPT_DIR}/hassakuXLIllustrious_v34.safetensors"
-copy_if_exists "${SRC_ROOT}/vae/sdxl_vaeFix.safetensors" "${ACTIVE_VAE_DIR}/sdxl_vaeFix.safetensors"
-copy_if_exists "${SRC_ROOT}/upscale_models/RealESRGAN_x4plus_anime_6B.pth" "${ACTIVE_UPS_DIR}/RealESRGAN_x4plus_anime_6B.pth"
-
-echo "ACTIVE_CKPT_DIR=${ACTIVE_CKPT_DIR}"
-echo "ACTIVE_VAE_DIR=${ACTIVE_VAE_DIR}"
-echo "ACTIVE_UPS_DIR=${ACTIVE_UPS_DIR}"
-echo "OK sync"
-
+echo "OK sync (${#CKPT_DIRS[@]} targets)"
