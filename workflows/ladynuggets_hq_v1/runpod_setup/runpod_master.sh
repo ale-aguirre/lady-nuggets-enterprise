@@ -19,6 +19,7 @@ runpod_master.sh
 Commands:
   init      Install deps + create Comfy model folders
   models    Create models.env (if missing), inject CIVITAI_TOKEN if provided, download models
+  sync      Copy downloaded models into active Comfy API model directories
   verify    Verify downloaded model files
   cleanup   Remove duplicate model files (*.1, *.2...) keeping canonical names
   test      Run one real Comfy generation and save output image
@@ -80,7 +81,12 @@ cmd_verify() {
   bash "${ROOT_DIR}/verify_models.sh"
 }
 
+cmd_sync() {
+  bash "${ROOT_DIR}/sync_active_model_dirs.sh"
+}
+
 cmd_test() {
+  cmd_sync
   python3 "${ROOT_DIR}/run_comfy_test.py"
 }
 
@@ -126,6 +132,9 @@ main() {
     verify)
       cmd_verify
       ;;
+    sync)
+      cmd_sync
+      ;;
     test)
       cmd_test
       ;;
@@ -135,6 +144,7 @@ main() {
     all)
       cmd_init
       cmd_models
+      cmd_sync
       cmd_verify
       ;;
     ""|-h|--help|help)
