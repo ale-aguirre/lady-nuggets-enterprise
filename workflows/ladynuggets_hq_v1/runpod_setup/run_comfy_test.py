@@ -57,9 +57,39 @@ def main():
     )
     seed = int(os.environ.get("TEST_SEED", str(random.randint(1, 2_147_483_647))))
 
+    object_info = http_json("GET", f"{comfy}/object_info")
+    ckpt_list = (
+        object_info.get("CheckpointLoaderSimple", {})
+        .get("input", {})
+        .get("required", {})
+        .get("ckpt_name", [[]])[0]
+        or []
+    )
+    upscaler_list = (
+        object_info.get("UpscaleModelLoader", {})
+        .get("input", {})
+        .get("required", {})
+        .get("model_name", [[]])[0]
+        or []
+    )
+
+    target_ckpt = "hassakuXLIllustrious_v34.safetensors"
+    if target_ckpt not in ckpt_list:
+        if "sd_xl_base_1.0.safetensors" in ckpt_list:
+            target_ckpt = "sd_xl_base_1.0.safetensors"
+        elif ckpt_list:
+            target_ckpt = ckpt_list[0]
+    target_upscaler = "RealESRGAN_x4plus_anime_6B.pth"
+    can_hq = target_upscaler in upscaler_list and target_ckpt in ckpt_list
+
+    print(f"[test] available_ckpt={ckpt_list}")
+    print(f"[test] available_upscalers={upscaler_list}")
+    print(f"[test] target_ckpt={target_ckpt}")
+    print(f"[test] target_upscaler={target_upscaler} can_hq={can_hq}")
+
     wf = json.loads(workflow_file.read_text())
-    wf["1"]["inputs"]["ckpt_name"] = "hassakuXLIllustrious_v34.safetensors"
-    wf["10"]["inputs"]["model_name"] = "RealESRGAN_x4plus_anime_6B.pth"
+    wf["1"]["inputs"]["ckpt_name"] = target_ckpt
+    wf["10"]["inputs"]["model_name"] = target_upscaler
     wf["2"]["inputs"]["batch_size"] = 1
     wf["3"]["inputs"]["text"] = prompt_text
     wf["5"]["inputs"]["seed"] = seed
@@ -84,7 +114,9 @@ def main():
                 print(f"[test] error body: {body[:1200]}")
             return None
 
-    created = try_submit(wf, "hq_workflow")
+    created = try_submit(wf, "hq_workflow") if can_hq else None
+    if not can_hq:
+        print("[test] hq skipped (checkpoint/upscaler not available in API list)")
     if created is None:
         print("[test] fallback -> basic workflow")
         basic_neg = (
@@ -92,7 +124,7 @@ def main():
             "watermark, text, logo, child, loli"
         )
         wf = {
-            "1": {"inputs": {"ckpt_name": "hassakuXLIllustrious_v34.safetensors"}, "class_type": "CheckpointLoaderSimple"},
+            "1": {"inputs": {"ckpt_name": target_ckpt}, "class_type": "CheckpointLoaderSimple"},
             "2": {"inputs": {"width": 832, "height": 1216, "batch_size": 1}, "class_type": "EmptyLatentImage"},
             "3": {"inputs": {"text": prompt_text, "clip": ["1", 1]}, "class_type": "CLIPTextEncode"},
             "4": {"inputs": {"text": basic_neg, "clip": ["1", 1]}, "class_type": "CLIPTextEncode"},
